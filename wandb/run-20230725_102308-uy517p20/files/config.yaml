@@ -1,0 +1,47 @@
+wandb_version: 1
+
+name:
+  desc: null
+  value: K_fold test lr 1E-3 1
+Max_epoch:
+  desc: null
+  value: 20
+learning_rate:
+  desc: null
+  value: 0.001
+K:
+  desc: null
+  value: 10
+notes:
+  desc: null
+  value: None
+_wandb:
+  desc: null
+  value:
+    python_version: 3.10.12
+    cli_version: 0.15.6
+    framework: torch
+    is_jupyter_run: true
+    is_kaggle_kernel: true
+    start_time: 1690251788.93962
+    t:
+      1:
+      - 1
+      - 5
+      - 53
+      - 55
+      2:
+      - 1
+      - 5
+      - 53
+      - 55
+      3:
+      - 13
+      - 16
+      - 23
+      4: 3.10.12
+      5: 0.15.6
+      8:
+      - 1
+      - 2
+      - 5

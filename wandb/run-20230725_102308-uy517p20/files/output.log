@@ -1,0 +1,17 @@
+trian data num: 39073
+test data num: 9769
+[preprocess]: detected unseen values in column capital-gain
+[preprocess]: detected unseen values in column hours-per-week
+node_nums {'L': 3, 'S': 39074, 'C': 469, 'F': 14}
+total 39560 nodes
+L_input torch.cuda.LongTensor torch.Size([3, 1])
+S_input torch.cuda.FloatTensor torch.Size([39074, 128])
+C_input torch.cuda.LongTensor torch.Size([469, 1])
+F_input torch.cuda.LongTensor torch.Size([14, 1])
+L_input torch.cuda.LongTensor torch.Size([3, 1])
+S_input torch.cuda.FloatTensor torch.Size([39074, 128])
+C_input torch.cuda.LongTensor torch.Size([469, 1])
+F_input torch.cuda.LongTensor torch.Size([14, 1])
+/home/tsou/.conda/envs/xformers/lib/python3.10/site-packages/sklearn/preprocessing/_discretization.py:313: UserWarning: Bins whose width are too small (i.e., <= 1e-8) in feature 0 are removed. Consider decreasing the number of bins.
+  warnings.warn(
+

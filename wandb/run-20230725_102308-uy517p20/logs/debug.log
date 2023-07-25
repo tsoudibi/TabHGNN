@@ -1,0 +1,29 @@
+2023-07-25 10:23:08,934 INFO    MainThread:24089 [wandb_setup.py:_flush():76] Current SDK version is 0.15.6
+2023-07-25 10:23:08,934 INFO    MainThread:24089 [wandb_setup.py:_flush():76] Configure stats pid to 24089
+2023-07-25 10:23:08,934 INFO    MainThread:24089 [wandb_setup.py:_flush():76] Loading settings from /home/tsou/.config/wandb/settings
+2023-07-25 10:23:08,934 INFO    MainThread:24089 [wandb_setup.py:_flush():76] Loading settings from /home/tsou/Desktop/SinoPac/TabHGNN/wandb/settings
+2023-07-25 10:23:08,934 INFO    MainThread:24089 [wandb_setup.py:_flush():76] Loading settings from environment variables: {'silent': 'true'}
+2023-07-25 10:23:08,934 INFO    MainThread:24089 [wandb_setup.py:_flush():76] Applying setup settings: {'_disable_service': False}
+2023-07-25 10:23:08,934 INFO    MainThread:24089 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program': '<python with no main file>'}
+2023-07-25 10:23:08,935 INFO    MainThread:24089 [wandb_init.py:_log_setup():507] Logging user logs to /home/tsou/Desktop/SinoPac/TabHGNN/wandb/run-20230725_102308-uy517p20/logs/debug.log
+2023-07-25 10:23:08,935 INFO    MainThread:24089 [wandb_init.py:_log_setup():508] Logging internal logs to /home/tsou/Desktop/SinoPac/TabHGNN/wandb/run-20230725_102308-uy517p20/logs/debug-internal.log
+2023-07-25 10:23:08,935 INFO    MainThread:24089 [wandb_init.py:_jupyter_setup():453] configuring jupyter hooks <wandb.sdk.wandb_init._WandbInit object at 0x7fd0ee112ec0>
+2023-07-25 10:23:08,936 INFO    MainThread:24089 [wandb_init.py:init():547] calling init triggers
+2023-07-25 10:23:08,936 INFO    MainThread:24089 [wandb_init.py:init():554] wandb.init called with sweep_config: {}
+config: {'name': 'K_fold test lr 1E-3 1', 'Max_epoch': 20, 'learning_rate': 0.001, 'K': 10, 'notes': 'None'}
+2023-07-25 10:23:08,936 INFO    MainThread:24089 [wandb_init.py:init():596] starting backend
+2023-07-25 10:23:08,936 INFO    MainThread:24089 [wandb_init.py:init():600] setting up manager
+2023-07-25 10:23:08,938 INFO    MainThread:24089 [backend.py:_multiprocessing_setup():106] multiprocessing start_methods=fork,spawn,forkserver, using: spawn
+2023-07-25 10:23:08,939 INFO    MainThread:24089 [wandb_init.py:init():606] backend started and connected
+2023-07-25 10:23:08,946 INFO    MainThread:24089 [wandb_run.py:_label_probe_notebook():1234] probe notebook
+2023-07-25 10:23:08,947 INFO    MainThread:24089 [wandb_run.py:_label_probe_notebook():1244] Unable to probe notebook: 'NoneType' object has no attribute 'get'
+2023-07-25 10:23:08,947 INFO    MainThread:24089 [wandb_init.py:init():697] updated telemetry
+2023-07-25 10:23:08,952 INFO    MainThread:24089 [wandb_init.py:init():730] communicating run to backend with 60.0 second timeout
+2023-07-25 10:23:09,446 INFO    MainThread:24089 [wandb_run.py:_on_init():2174] communicating current version
+2023-07-25 10:23:09,593 INFO    MainThread:24089 [wandb_run.py:_on_init():2183] got version response 
+2023-07-25 10:23:09,593 INFO    MainThread:24089 [wandb_init.py:init():781] starting run threads in backend
+2023-07-25 10:23:10,890 INFO    MainThread:24089 [wandb_run.py:_console_start():2153] atexit reg
+2023-07-25 10:23:10,890 INFO    MainThread:24089 [wandb_run.py:_redirect():2008] redirect: wrap_raw
+2023-07-25 10:23:10,890 INFO    MainThread:24089 [wandb_run.py:_redirect():2073] Wrapping output streams.
+2023-07-25 10:23:10,890 INFO    MainThread:24089 [wandb_run.py:_redirect():2098] Redirects installed.
+2023-07-25 10:23:10,890 INFO    MainThread:24089 [wandb_init.py:init():822] run started, returning control to user process
