@@ -1,2 +1,3 @@
 wandb/
 logs/
+*.pyc
