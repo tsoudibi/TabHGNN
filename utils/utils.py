@@ -7,6 +7,31 @@ def set_DEVICE(device):
 def get_DEVICE():
     return DEVICE
 
+import yaml 
+DATA_CONFIG = {}
+dataset = 'None'
+with open('/home/tsou/Desktop/SinoPac/TabHGNN/data/RAW_data/data_configs.yml', 'r') as stream:
+# with open('..\\data\\RAW_data\\data_configs.yaml', 'r') as stream:
+    DATA_CONFIG = yaml.load(stream, Loader=yaml.Loader)
+def get_DATA_CONFIG():
+    return DATA_CONFIG
+
+def select_dataset(name):
+    if name in DATA_CONFIG.keys():
+        global dataset
+        dataset = name
+        print('=================[dataset is set to', name,']=================')
+    else:
+        raise ValueError('ERROR: dataset name is not in config file')
+    return DATA_CONFIG[name]['file_path']
+
+def get_feilds_attributes():
+    return DATA_CONFIG[dataset]['NUM'], DATA_CONFIG[dataset]['CAT'], DATA_CONFIG[dataset]['TARGET']
+def get_Discretizer_attributes():
+    return DATA_CONFIG[dataset]['quntile'], DATA_CONFIG[dataset]['uniform']
+def get_label_colunm():
+    return DATA_CONFIG[dataset]['TARGET']
+
 def set_seed(seed):
     try:
         import tensorflow as tf

@@ -2,6 +2,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import KBinsDiscretizer
 import numpy as np
 import pandas as pd
+from utils.utils import get_feilds_attributes, get_Discretizer_attributes
 
 def POOL_preprocess(df, N_BINS = 100):
     '''
@@ -16,20 +17,26 @@ def POOL_preprocess(df, N_BINS = 100):
         existing_values: dict, {column name: sorted list of existing values}
     '''
     
-    CAT = ['workclass', 'education', 'marital-status', 'occupation', 'relationship', 'race', 'gender', 'native-country', 'income']
-    NUM = ['age', 'fnlwgt', 'educational-num', 'capital-gain', 'capital-loss', 'hours-per-week']
+    NUM, CAT, TARGET = get_feilds_attributes()
+    quantile, uniform = get_Discretizer_attributes()
     
     num_CAT = len(CAT)
     num_NUM = len(NUM)  
     
-    ct = ColumnTransformer([
-        ("age", KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='uniform', subsample=None), ["age"]),
-        ("fnlwgt", KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='quantile', subsample=None), ["fnlwgt"]),
-        ("educational-num", KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='quantile', subsample=None), ["educational-num"]),
-        ("capital-gain", KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='uniform', subsample=None), ["capital-gain"]),
-        ("capital-loss", KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='uniform', subsample=None), ["capital-loss"]),
-        ("hours-per-week", KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='uniform', subsample=None), ["hours-per-week"]),
-         ],remainder = 'passthrough', verbose_feature_names_out = False) # make sure columns are unique
+    pipe_uniform = KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='uniform', subsample=None)
+    pipe_quantile = KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='quantile', subsample=None)
+    ct = ColumnTransformer(
+        [(column, pipe_uniform, [column]) for column in uniform] + 
+        [(column, pipe_quantile, [column]) for column in quantile]
+         ,remainder = 'passthrough', verbose_feature_names_out = False) # make sure columns are unique
+    # ct = ColumnTransformer([
+    #     ("age", KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='uniform', subsample=None), ["age"]),
+    #     ("fnlwgt", KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='quantile', subsample=None), ["fnlwgt"]),
+    #     ("educational-num", KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='quantile', subsample=None), ["educational-num"]),
+    #     ("capital-gain", KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='uniform', subsample=None), ["capital-gain"]),
+    #     ("capital-loss", KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='uniform', subsample=None), ["capital-loss"]),
+    #     ("hours-per-week", KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='uniform', subsample=None), ["hours-per-week"]),
+    #      ],remainder = 'passthrough', verbose_feature_names_out = False) # make sure columns are unique
     ct.set_output(transform = 'pandas')
     X_trans = ct.fit_transform(df) 
 
@@ -44,7 +51,7 @@ def POOL_preprocess(df, N_BINS = 100):
         # print(values)
     catagory_count = 0
     for column in CAT:
-        if column == 'income':
+        if column == TARGET:
             continue
         catagory_count += len(X_trans[column].unique()) + 1
     C_pool = np.concatenate((C_pool, np.arange(catagory_count)))
@@ -75,7 +82,7 @@ def POOL_preprocess(df, N_BINS = 100):
     
     X_trans = X_trans.astype(int).reset_index(drop = True)
     return X_trans, (ct, OE_list, NUM, CAT, existing_values), (num_NUM, num_CAT - 1), C_pool
-    # -1 is for the income column (label)
+    # -1 is for the label column 
     
 
 def POOL_preprocess_inference(df: pd.DataFrame,

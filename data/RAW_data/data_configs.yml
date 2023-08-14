@@ -1,0 +1,30 @@
+adult:
+  file_path: data/RAW_data/adult.csv
+  CAT: 
+    - workclass
+    - education
+    - marital-status
+    - occupation
+    - relationship
+    - race
+    - gender
+    - native-country
+    - income
+  NUM: 
+    - age
+    - fnlwgt
+    - educational-num
+    - capital-gain
+    - capital-loss
+    - hours-per-week
+  TARGET: 
+    income
+  quntile:
+    - fnlwgt
+    - educational-num
+  uniform: 
+    - age
+    - capital-gain
+    - capital-loss
+    - hours-per-week  
+  

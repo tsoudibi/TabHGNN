@@ -1,6 +1,6 @@
 run_config:
   device: cuda
-  dataset: income
+  dataset: adult
   max_epoch: 1000
   learning_rate: 0.001
   batch_size: 128
@@ -15,10 +15,10 @@ run_config:
   random_state: 42
 
 wandb_config:
-  use_wandb: True
+  use_wandb: False
   entity: tabhyperformer
   project: K_fold test 0727 
-  name : v9.3 1000
-  group: v9.3 1000
+  name : v9.3 1000123
+  group: v9.3 1000123
   notes: V10
 
