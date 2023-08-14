@@ -1,0 +1,24 @@
+run_config:
+  device: cuda
+  dataset: income
+  max_epoch: 1000
+  learning_rate: 0.001
+  batch_size: 128
+  batch_size_test: 12
+  K: 100
+  num_layers: 1
+  embedding_dim: 128
+  propagation_steps: 1
+  unseen_rate: 0.0
+  aug_strategy: "None"
+  N_BINS: 100
+  random_state: 42
+
+wandb_config:
+  use_wandb: True
+  entity: tabhyperformer
+  project: K_fold test 0727 
+  name : v9.3 1000
+  group: v9.3 1000
+  notes: V10
+

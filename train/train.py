@@ -64,6 +64,7 @@ def train(model : nn.Module,
         iter = 0
         if verbose >= 2:
             stepper = trange(len(datset.FEATURE_POOL)//batch_size)
+            stepper.set_description(f"Epoch{epoch+1}/{epochs}")
         else:
             stepper = range(len(datset.FEATURE_POOL)//batch_size)
         for index in stepper: # query through all sample nodes (not infering node)
@@ -99,18 +100,11 @@ def train(model : nn.Module,
             TRUE = np.argmax(LABEL_POOL_,axis=1)
             
             outputs = outputs.softmax(dim=1)
-            # print(query_indices)
-            # print(outputs)
-            # print(TRUE)
-            # break
             pred_prob_of_is_1 = [probs[1] for probs in outputs] 
             # the probability of the query node is 1 (from model output)
             
-            # tmp_log.append(float(pred_prob_of_is_1))
-            # tmp__log.append((TRUE))
             AUC_metric.update(torch.Tensor(pred_prob_of_is_1),torch.Tensor(TRUE))
             torch.cuda.empty_cache()
-            # break
             iter += 1
             # if iter >= 100:
             #     break
