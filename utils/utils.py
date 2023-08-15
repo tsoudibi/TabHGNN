@@ -10,8 +10,7 @@ def get_DEVICE():
 import yaml 
 DATA_CONFIG = {}
 dataset = 'None'
-with open('/home/tsou/Desktop/SinoPac/TabHGNN/data/RAW_data/data_configs.yml', 'r') as stream:
-# with open('..\\data\\RAW_data\\data_configs.yaml', 'r') as stream:
+with open('./data/RAW_data/data_configs.yml', 'r') as stream:
     DATA_CONFIG = yaml.load(stream, Loader=yaml.Loader)
 def get_DATA_CONFIG():
     return DATA_CONFIG

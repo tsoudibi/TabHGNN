@@ -26,6 +26,7 @@ def train(model : nn.Module,
           K : int = 10,
           unseen_rate : float = 0.1,
           aug_strategy: str = 'random',
+          evaluate_stride: int = 1,
           verbose : int = 1,
             # verbose = 0: no printed log
             # verbose = 1: print loss and AUC per train
@@ -124,7 +125,7 @@ def train(model : nn.Module,
             stepper_epoch.set_postfix({'loss_train':epoch_loss, 'AUC_train':epoch_AUC, 'AUC_test':epoch_AUC_test})
         
         '''------------------------evaluate------------------------'''
-        if (epoch+1) % 1 == 0:
+        if (epoch+1) % evaluate_stride == 0:
             # evaluate
             model.eval()
             iter = 0

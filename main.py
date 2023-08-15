@@ -71,6 +71,7 @@ if __name__ == '__main__':
             K = run_config['K'],
             unseen_rate = run_config['unseen_rate'],
             aug_strategy = run_config['aug_strategy'],
+            evaluate_stride = run_config['evaluate_stride'],
             verbose = 2,
             log_name = wandb_config['name'],
             wandb_log = wandb_config['use_wandb'],)

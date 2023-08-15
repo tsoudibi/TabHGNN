@@ -14,6 +14,7 @@ run_config:
   aug_strategy: "random"
   N_BINS: 100
   random_state: 42
+  evaluate_stride: 10
 
 wandb_config:
   use_wandb: False
