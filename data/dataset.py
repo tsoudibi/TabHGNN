@@ -175,46 +175,36 @@ class HGNN_dataset():
         self.MASKS_FULL = masks
         
     def make_mask_test(self, 
-                       indexs_in_test_pool : list
+                       indexs_in_test_pool : list 
                        ):
         '''Make mask tensor for the testing scenario. \n
         In testing scenario, L, S, C, F remain the same, while all INPUTs are the same (sience they are initialized fixed vlaues\n
         All we need to do is to update masks(L2S, S2C) for the new inference node
+        Args:
+            indexs_in_test_pool: list of indexs of nodes in test pool, which are the query nodes for inference
+                                that is, query_indices.
         '''
         L, S, C, F = self.nodes_num['L'], self.nodes_num['S'], self.nodes_num['C'], self.nodes_num['F']
         
         masks = {}
-        tmp_L2S = []
-        tmp_S2C = []
+
         # for i query nodes
-        for index_in_test_pool in indexs_in_test_pool:
-            # L2S shape: torch.Size([39080, 8]), values in torch.Size([39074, 3]).
-            # number of sample nodes : 39073 + 1 (inference node)
-            # S = 39074, -1 to convert to index of last node
-            tmp = self.MASKS_FULL['L2S'].clone().detach()
-            tmp[S-1, L-1] = 1 # connect inference node to unseen lable nodes
-            tmp_L2S.append(tmp)
-            # masks['L2S'] = tmp.unsqueeze(0)
+        C_pool_values = self.TEST_POOL.drop(self.LABEL_COLUMN, axis=1).values
+
+        masks['L2S'] = self.MASKS_FULL['L2S'].clone().detach()
+        masks['L2S'][S-1, L-1] = 1
+        masks['L2S'] = masks['L2S'].repeat(len(indexs_in_test_pool),1,1)
+
+        def edit_S2C(index):
+            masks['S2C'][index, C_pool_values[indexs_in_test_pool[index]],S-1] = 1  
+        masks['S2C'] = self.MASKS_FULL['S2C'].clone().detach().repeat(len(indexs_in_test_pool),1,1)
+        _ = list(map(edit_S2C, range(len(indexs_in_test_pool))))
         
-            # S2C shape: torch.Size([472, 39080]), values in torch.Size([470, 39074]).
-            # self.MASKS_FULL['S2C'].T :[39080, 472], values in [39074, 470]
-            # self.TEST_POOL.drop(self.LABEL_COLUMN, axis=1).values[index_in_test_pool]
-            tmp = self.MASKS_FULL['S2C'].T.clone().detach()
-            # connect the last sample node (inference node) with it's catagory nodes
-            tmp[S-1, self.TEST_POOL.drop(self.LABEL_COLUMN, axis=1).values[index_in_test_pool]] = 1  
-            tmp_S2C.append(tmp.T)
-            
-            # masks['S2C'] = tmp.T.contiguous().unsqueeze(0)
-            
-        masks['L2S'] = torch.stack(tmp_L2S, dim = 0)
-        masks['S2C'] = torch.stack(tmp_S2C, dim = 0)
         # C2F remains the same
         masks['C2F'] = self.MASKS_FULL['C2F'].repeat(len(indexs_in_test_pool),1,1)
         
         self.MASKS = masks
-        # print('masks[\'L2S\']',masks['L2S'].shape)
-        # print('masks[\'S2C\']',masks['S2C'].shape)
-        # print('masks[\'C2F\']',masks['C2F'].shape)
+
         
         
     def make_input_tensor(self):
@@ -235,12 +225,7 @@ class HGNN_dataset():
         # L
         L_input = torch.tensor([range(L)], device=DEVICE).reshape(-1,1)
         # print('L_input', L_input.type(), L_input.shape)
-        
-        # S (normalized by standard scaler)
-        # features = torch.tensor(self.FEATURE_POOL.values, device=DEVICE).float()
-        # normalized_features = (features - torch.mean(features, dim = 0)) / torch.std(features, dim = 0)
-        # S_input = torch.cat([normalized_features, torch.tensor([[0]*F], device=DEVICE)],dim = 0).float() # add infering node
-        
+       
         # S (initialize by random)
         S_input = torch.rand(self.embedding_dim, device=DEVICE).repeat(S,1)
         # print('S_input', S_input.type(), S_input.shape)

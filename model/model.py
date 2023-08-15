@@ -160,20 +160,19 @@ class TransformerDecoderModel(nn.Module):
         L = dataset.nodes_num['L']
         if sample_indices is not None:
             self.tmpmask_L2S = dataset.MASKS['L2S'].clone().detach()
-            for index, sample_indice in enumerate(sample_indices): # sample_indice in length K
-                # modify the mask to mask out the queries node's edge to it's label node
+            def maskout_label(index, sample_indice):
                 query_index = sample_indice.index(query_indices[index]) # query_index: index of query node in sample_indice of the batch
                 # L2S mask shape : B, S, L
                 # self.tmpmask_L2S[index, query_index][:-1] = 1 # connect to all label nodes except the unseen label
                 self.tmpmask_L2S[index, query_index] = 0
                 self.tmpmask_L2S[index, query_index][L-1] = 1 # make it as unseen label
+            _ = list(map(maskout_label, range(len(sample_indices)), sample_indices))
         else:
             self.tmpmask_L2S = dataset.MASKS['L2S'].clone().detach()
-            for index, query in enumerate(query_indices):
-                # self.tmpmask_L2S[index, query][:-1] = 1 # connect to all label nodes except the unseen label
+            def maskout_label(index, query):
                 self.tmpmask_L2S[index, query] = 0
                 self.tmpmask_L2S[index, query][L-1] = 1 # make it as unseen label
-                
+            _ = list(map(maskout_label, range(len(query_indices)), query_indices))
                 
     def forward(self, 
                 dataset: HGNN_dataset, 
@@ -243,20 +242,15 @@ class TransformerDecoderModel(nn.Module):
         
         S_embedded = S_input.float()
         print_checkpoint_time('get L+S_embedded')
+        
         # for every numrical filed, use it's own Linear embedding layer
-        # C_embedded_nums = []
         field = dataset.nodes_of_fields
-        # start = 0
-        # for index, nodes in enumerate(field[:num_NUM]): # pick numrical fields
-        #     end = start + nodes
-        #     C_embedded_nums.append(self.Catagory_embedding_nums[index](C_input[:,start:end].float()))
-        #     start = end
-            
+
         weights = []
         biases = []
         C_inputs = []
+        
         start = 0
-            
         for index, nodes in enumerate(field[:num_NUM]):
             end = start + nodes
             weights.append(torch.repeat_interleave(self.Catagory_embedding_nums[index].weight.unsqueeze(0), nodes, dim = 0))
@@ -267,25 +261,11 @@ class TransformerDecoderModel(nn.Module):
         weights = torch.cat(weights, dim=0) # (node, hid, 1)
         biases = torch.cat(biases, dim=0) # (node, hid)
         C_inputs = torch.cat(C_inputs, dim=1).float() # (batch, node, 1)
-        
-        
         #print(weights.shape, biases.shape, C_inputs.shape)
         
         C_embedded_num = ((C_inputs.unsqueeze(-1) * weights.unsqueeze(0)).sum(-1) + biases.unsqueeze(0))
         
-        
-        
-            
-            
-        
-        # numerical_field = field[:num_NUM]
-        # def C_embedded_num_cal(index):
-        #     start = sum(numerical_field[:index])
-        #     end = sum(numerical_field[:index+1])
-        #     return (self.Catagory_embedding_nums[index](C_input[:,start:end].float()))
-        # C_embedded_nums = list(map(C_embedded_num_cal, range(num_NUM)))
-        # C_embedded_num = torch.cat(C_embedded_nums, dim = 1)
-        
+
         catagorical_filed_nodes = sum(field[-num_CAT:]) # pick catagory fields
         C_embedded_cat = self.Catagory_embedding_cat(C_input[:,-catagorical_filed_nodes:].squeeze(2).long()).float() 
         # print(C_embedded_num.shape, C_embedded_cat.shape)
