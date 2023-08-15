@@ -113,13 +113,13 @@ class TransformerDecoderModel(nn.Module):
 
         self.Lable_embedding = nn.Embedding(L, embedding_dim, dtype=torch.float)
     
-        # self.Catagory_embedding_num = nn.Linear(C_dim, embedding_dim, dtype=torch.float)
         # for every numrical filed, construct it's own Linear embedding layer
         self.Catagory_embedding_nums = []
         for i in range(num_NUM):
             self.Catagory_embedding_nums.append(
                 nn.Linear(C_dim, embedding_dim, dtype=torch.float, device=DEVICE)
             )
+            
         catagories = dataset.nodes_of_fields[-num_CAT:] # number of all possible catagories nodes
         self.Catagory_embedding_cat = nn.Embedding(sum(catagories), embedding_dim, dtype=torch.float)
         
@@ -244,13 +244,39 @@ class TransformerDecoderModel(nn.Module):
         S_embedded = S_input.float()
         print_checkpoint_time('get L+S_embedded')
         # for every numrical filed, use it's own Linear embedding layer
-        C_embedded_nums = []
+        # C_embedded_nums = []
         field = dataset.nodes_of_fields
+        # start = 0
+        # for index, nodes in enumerate(field[:num_NUM]): # pick numrical fields
+        #     end = start + nodes
+        #     C_embedded_nums.append(self.Catagory_embedding_nums[index](C_input[:,start:end].float()))
+        #     start = end
+            
+        weights = []
+        biases = []
+        C_inputs = []
         start = 0
-        for index, nodes in enumerate(field[:num_NUM]): # pick numrical fields
+            
+        for index, nodes in enumerate(field[:num_NUM]):
             end = start + nodes
-            C_embedded_nums.append(self.Catagory_embedding_nums[index](C_input[:,start:end].float()))
+            weights.append(torch.repeat_interleave(self.Catagory_embedding_nums[index].weight.unsqueeze(0), nodes, dim = 0))
+            biases.append(torch.repeat_interleave(self.Catagory_embedding_nums[index].bias.unsqueeze(0), nodes, dim=0))
+            C_inputs.append(C_input[:,start:end])
             start = end
+        
+        weights = torch.cat(weights, dim=0) # (node, hid, 1)
+        biases = torch.cat(biases, dim=0) # (node, hid)
+        C_inputs = torch.cat(C_inputs, dim=1).float() # (batch, node, 1)
+        
+        
+        #print(weights.shape, biases.shape, C_inputs.shape)
+        
+        C_embedded_num = ((C_inputs.unsqueeze(-1) * weights.unsqueeze(0)).sum(-1) + biases.unsqueeze(0))
+        
+        
+        
+            
+            
         
         # numerical_field = field[:num_NUM]
         # def C_embedded_num_cal(index):
@@ -258,7 +284,7 @@ class TransformerDecoderModel(nn.Module):
         #     end = sum(numerical_field[:index+1])
         #     return (self.Catagory_embedding_nums[index](C_input[:,start:end].float()))
         # C_embedded_nums = list(map(C_embedded_num_cal, range(num_NUM)))
-        C_embedded_num = torch.cat(C_embedded_nums, dim = 1)
+        # C_embedded_num = torch.cat(C_embedded_nums, dim = 1)
         
         catagorical_filed_nodes = sum(field[-num_CAT:]) # pick catagory fields
         C_embedded_cat = self.Catagory_embedding_cat(C_input[:,-catagorical_filed_nodes:].squeeze(2).long()).float() 
