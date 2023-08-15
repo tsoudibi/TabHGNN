@@ -11,7 +11,7 @@ from tqdm import trange, tqdm
 
 
 class TabTransformerDecoder(nn.TransformerDecoder):
-    def forward(self, tgt: Tensor, memory: Tensor, tgt_ori:Tensor, tgt_mask: Tensor | None = None, memory_mask: Tensor | None = None, tgt_key_padding_mask: Tensor | None = None, memory_key_padding_mask: Tensor | None = None) -> Tensor:
+    def forward(self, tgt: Tensor, memory: Tensor, tgt_ori:Tensor, tgt_mask: Tensor = None, memory_mask: Tensor = None, tgt_key_padding_mask: Tensor  = None, memory_key_padding_mask: Tensor = None) -> Tensor:
         '''
         Pass the inputs (and mask) through the decoder layer in turn.
 
