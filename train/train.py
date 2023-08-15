@@ -62,6 +62,7 @@ def train(model : nn.Module,
         AUC_metric = BinaryAUROC().to(DEVICE)
         AUC_metric_test = BinaryAUROC().to(DEVICE)
         
+        torch.cuda.empty_cache()
         iter = 0
         if verbose >= 2:
             stepper = trange(len(datset.FEATURE_POOL)//batch_size)
@@ -69,7 +70,6 @@ def train(model : nn.Module,
         else:
             stepper = range(len(datset.FEATURE_POOL)//batch_size)
         for index in stepper: # query through all sample nodes (not infering node)
-            torch.cuda.empty_cache()
             optimizer.zero_grad()
             # pick query nodes
             query_indices = QUERY_POOL[:batch_size]
@@ -97,6 +97,8 @@ def train(model : nn.Module,
             # backpropagation
             batch_loss.backward()
             optimizer.step()
+            print_checkpoint_time('loss 1')
+            
 
             TRUE = np.argmax(LABEL_POOL_,axis=1)
             
@@ -109,7 +111,7 @@ def train(model : nn.Module,
             iter += 1
             # if iter >= 100:
             #     break
-            print_checkpoint_time('loss')
+            print_checkpoint_time('loss 2')
             if index == len(datset.FEATURE_POOL)//batch_size -1 and verbose >= 2:
                 stepper.set_postfix(AUC=float(AUC_metric.compute()))
                 stepper.update()

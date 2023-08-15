@@ -6,7 +6,7 @@ import torch
 from torch import Tensor
 from typing import Optional, Tuple
 from data.preprocess import POOL_preprocess, POOL_preprocess_inference
-from utils.utils import get_DEVICE
+from utils.utils import *
 
 
 
@@ -119,54 +119,11 @@ class HGNN_dataset():
         '''
         DEVICE = get_DEVICE()
         L, S, C, F = self.nodes_num['L'], self.nodes_num['S'], self.nodes_num['C'], self.nodes_num['F']
-
-        def make_L2S(batch_indices):
-            tmp = self.MASKS_FULL['L2S']
-            tmp = torch.index_select(tmp, 0, torch.tensor(batch_indices, device=DEVICE)) #The returned tensor does not use the same storage as the original tensor
-            # tmp = torch.zeros([math.ceil(sample_size/8) * 8, math.ceil(L/8) * 8], dtype=torch.float, device=DEVICE) 
-            # label_value = masked_POOL[self.LABEL_COLUMN].values
-            # tmp[torch.arange(sample_size, device=DEVICE), torch.tensor(label_value - min(label_value), device=DEVICE)] = 1
-            shape = (math.ceil(sample_size/8) * 8, math.ceil(L/8) * 8)
-            new_tensor = torch.zeros(*shape, device=DEVICE)
-            new_tensor[:tmp.shape[0], :tmp.shape[1]] = tmp
-            tmp = new_tensor.view(*shape)
-            
-            return tmp
-            # masks['L2S'] = tmp.repeat(batch_size,1,1)
-            
-        def make_S2C(batch_indices):
-            # sample to catagory
-            tmp = self.MASKS_FULL['S2C']
-            tmp = torch.index_select(tmp, 1, torch.tensor(batch_indices, device=DEVICE)) # The returned tensor does not use the same storage as the original tensor
-            # tmp = torch.zeros([math.ceil(C/8) * 8, math.ceil(sample_size/8) * 8], dtype=torch.float, device=DEVICE).T
-            # tmp_df = masked_POOL.drop(self.LABEL_COLUMN, axis=1)
-            # tmp[torch.arange(sample_size, device=DEVICE).unsqueeze(-1), torch.tensor(tmp_df.values, device=DEVICE)] = 1
-            # tmp = tmp.T.contiguous()
-            shape = (math.ceil(C/8) * 8, math.ceil(sample_size/8) * 8)
-            new_tensor = torch.zeros(*shape,device=DEVICE)
-            new_tensor[:tmp.shape[0], :tmp.shape[1]] = tmp
-            tmp = new_tensor.view(*shape)
-            
-            return tmp
-        
-        
         sample_size = len(sample_indices[0])
         # caculate masking
         masks = {}
-        
-        # tmp_L2S = []
-        # tmp_S2C = []
-
-        tmp_L2S = list(map(make_L2S, sample_indices))
-        tmp_S2C = list(map(make_S2C, sample_indices))
-        
-        masks['L2S'] = torch.stack(tmp_L2S, dim = 0)
-        masks['S2C'] = torch.stack(tmp_S2C, dim = 0)
-        
-        # masks['S2C'] = Tensor.contiguous(tmp.repeat(batch_size,1,1))
-        # masks['S2C'] = torch.stack(tmp_, dim = 0)
-
-        # catagory to field
+        masks['L2S'] = self.MASKS_FULL['L2S'][sample_indices]
+        masks['S2C'] = self.MASKS_FULL['S2C'][:,sample_indices].permute(1,0,2).contiguous()
         masks['C2F'] = self.MASKS_FULL['C2F'].repeat(len(query_indices),1,1)
         self.MASKS = masks
         self.nodes_num['K'] = sample_size
@@ -335,23 +292,28 @@ class HGNN_dataset():
         # include specific nodes (e.g. query nodes), while remaining sample_size
         sample_indices = []
         if query_indices is not []:
-            for query in query_indices:
-                indices = self.sample_with_distrubution(sample_size - 1)
-                while query in indices:
+                def make_sample_indices(query):
                     indices = self.sample_with_distrubution(sample_size - 1)
-                # add query nodes into sample_indices
-                indices.append(query)
-                sample_indices.append(sorted(indices))
+                    while query in indices:
+                        indices = self.sample_with_distrubution(sample_size - 1)
+                    # add query nodes into sample_indices
+                    indices.append(query)
+                    return sorted(indices)
+                sample_indices = list(map(make_sample_indices, query_indices))
+            # for query in query_indices:
+                # indices = self.sample_with_distrubution(sample_size - 1)
+                # while query in indices:
+                #     indices = self.sample_with_distrubution(sample_size - 1)
+                # # add query nodes into sample_indices
+                # indices.append(query)
+                # sample_indices.append(sorted(indices))
         else:
             indices = self.sample_with_distrubution(sample_size - len(query_indices))
             sample_indices.append(sorted(indices))
         # update mask
         # modify input tensor
         L_input, S_input, C_input, F_input = self.INPUTS
-        S_input_masked = []
-        for i in range(len(query_indices)):
-            S_input_masked.append(torch.index_select(S_input, 0, torch.tensor(sample_indices[i], device=DEVICE)))
-        S_input_masked = torch.stack(S_input_masked, dim = 0) # convert back to tensor
+        S_input_masked = S_input[sample_indices]
         self.MASKED_INPUTS = (L_input, S_input_masked, C_input, F_input) 
           
         return sample_indices

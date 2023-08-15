@@ -1,6 +1,6 @@
 from torch import Tensor
 from typing import Optional, Any, Union, Callable
-from utils.utils import get_DEVICE
+from utils.utils import *
 from data.dataset import HGNN_dataset
 import xformers.ops as xops
 import numpy as np
@@ -87,10 +87,10 @@ class TabHyperformer_Layer(nn.TransformerDecoderLayer):
     def _mha_block(self, x: Tensor, mem: Tensor,
                    attn_mask: Optional[Tensor],) -> Tensor:
         # linear projection
-        Q = self.pre_transform_Q(x)
-        K = self.pre_transform_K(mem)
-        V = self.pre_transform_V(mem)
-        x = xops.memory_efficient_attention(Q, K, V, attn_mask)
+        # Q = self.pre_transform_Q(x)
+        # K = self.pre_transform_K(mem)
+        # V = self.pre_transform_V(mem)
+        x = xops.memory_efficient_attention(x, mem, mem, attn_mask)
         
         # return self.dropout(x)
         return (x)
@@ -183,6 +183,7 @@ class TransformerDecoderModel(nn.Module):
                 unseen_rate : Optional[float] = 0.1,
                 aug_strategy: Optional[str] = 'random',
                 ):
+        print_checkpoint_time('start forward')
         L, S, C, F = dataset.nodes_num['L'], dataset.nodes_num['S'], dataset.nodes_num['C'], dataset.nodes_num['F']
         num_NUM, num_CAT = dataset.NUM_vs_CAT
         batch_size = len(query_indices)
@@ -191,13 +192,14 @@ class TransformerDecoderModel(nn.Module):
             # generate subgraph with K nodes, including query_indices
             # update mask and input tensor
             sample_indices = dataset.get_sample(K, query_indices = query_indices) # update mask
+            print_checkpoint_time('get_sample')
             dataset.make_mask_subgraph(sample_indices, query_indices)
-            
+            print_checkpoint_time('make_mask_subgraph')
             masks = dataset.MASKS
             
             # data_augmentation
             masks['S2C'] = dataset.random_connect_unseen(masks['S2C'], mask_ratio = unseen_rate, strategy = aug_strategy)
-            
+            print_checkpoint_time('random_connect_unseen')
             # get updated masked input tensor and mask 
             L_input, S_input, C_input, F_input = dataset.MASKED_INPUTS
             L_input = L_input.clone().detach().repeat(batch_size,1,1)
@@ -205,14 +207,14 @@ class TransformerDecoderModel(nn.Module):
             S_input = S_input.clone().detach()
             C_input = C_input.clone().detach().repeat(batch_size,1,1)
             F_input = F_input.clone().detach().repeat(batch_size,1,1)
-            
+            print_checkpoint_time('get masked input')
             # mask out the queries node's edge to it's label node, prevent label leakage
             self.maskout_lable(dataset, query_indices, sample_indices)
-            
+            print_checkpoint_time('maskout_lable')
             # the query node's indexs in sample_indices
             query_indexs = [sample_indices[i].index(query) for i, query in enumerate(query_indices)]
             S_ = K # the S used in transformer decoder
-            
+            print_checkpoint_time('get query_indexs')
         elif mode == 'inferring':
             # use all nodes in the graph 
             # get input tensor (no need to update)
@@ -240,7 +242,7 @@ class TransformerDecoderModel(nn.Module):
         L_embedded = self.Lable_embedding(L_input.long()).squeeze(2).float()
         
         S_embedded = S_input.float()
-
+        print_checkpoint_time('get L+S_embedded')
         # for every numrical filed, use it's own Linear embedding layer
         C_embedded_nums = []
         field = dataset.nodes_of_fields
@@ -262,9 +264,10 @@ class TransformerDecoderModel(nn.Module):
         C_embedded_cat = self.Catagory_embedding_cat(C_input[:,-catagorical_filed_nodes:].squeeze(2).long()).float() 
         # print(C_embedded_num.shape, C_embedded_cat.shape)
         C_embedded = torch.cat([C_embedded_num, C_embedded_cat], dim = 1)
+        print_checkpoint_time('get C_embedded')
         
         F_embedded = self.Field_embedding(F_input.long()).squeeze(2).float()
-        
+        print_checkpoint_time('get F_embedded')
         # print(query_indices, K)
         # print(L_embedded.shape, S_embedded.shape, C_embedded.shape, F_embedded.shape)
         
@@ -318,10 +321,11 @@ class TransformerDecoderModel(nn.Module):
                                                     memory_mask = Tensor.contiguous(masks['S2C'].clone().detach().transpose(1, 2))[:,:S_,:C])# + S_embedded
                 L_embedded = self.transformer_decoder(L_embedded,S_embedded, origin_L,
                                                     memory_mask = Tensor.contiguous(self.tmpmask_L2S.clone().detach().transpose(1, 2))[:,:L,:S_])# + L_embedded
-        
+        print_checkpoint_time('propagate')
         # print('after',S_embedded[0][0])
         output = self.MLP(S_embedded)
         outputs = output[np.arange(len(query_indexs)), query_indexs]
+        print_checkpoint_time('MLP')
         # outputs = []
         # for index, query in enumerate(query_indexs):
             # outputs.append(output[index, query])
