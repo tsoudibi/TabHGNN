@@ -55,6 +55,18 @@ class TabHyperformer_Layer(nn.TransformerDecoderLayer):
         self.scoring_layer = nn.Sequential(
             nn.Linear(d_model, 1)
         )
+        self.pre_transform_Q = nn.Sequential(
+            nn.Linear(d_model, d_model),
+            nn.LayerNorm(d_model)
+        )
+        self.pre_transform_K = nn.Sequential(
+            nn.Linear(d_model, d_model),
+            nn.LayerNorm(d_model)
+        )
+        self.pre_transform_V = nn.Sequential(
+            nn.Linear(d_model, d_model),
+            nn.LayerNorm(d_model)
+        )
     
     def forward(self, tgt, memory, tgt_ori, tgt_mask=None, memory_mask=None, tgt_key_padding_mask=None, memory_key_padding_mask=None):
         x = tgt
@@ -71,9 +83,14 @@ class TabHyperformer_Layer(nn.TransformerDecoderLayer):
         x = ff_out * score[:, :, :1] + x * score[:, :, 1:]
         
         return x
+    
     def _mha_block(self, x: Tensor, mem: Tensor,
                    attn_mask: Optional[Tensor],) -> Tensor:
-        x = xops.memory_efficient_attention(x, mem, mem, attn_mask)
+        # linear projection
+        Q = self.pre_transform_Q(x)
+        K = self.pre_transform_K(mem)
+        V = self.pre_transform_V(mem)
+        x = xops.memory_efficient_attention(Q, K, V, attn_mask)
         
         # return self.dropout(x)
         return (x)
@@ -125,6 +142,15 @@ class TransformerDecoderModel(nn.Module):
         self.tmpmask_L2S = dataset.MASKS['L2S'].clone()
 
         self.propagation_steps = propagation_steps
+        
+        self.C_num_starts = []
+        self.C_num_ends = []
+        start = end = 0
+        for nodes in dataset.nodes_of_fields[:num_NUM]:
+            end = start + nodes
+            self.C_num_starts.append(start)
+            self.C_num_ends.append(end)
+            start = end
 
     def maskout_lable(self,
                       dataset: HGNN_dataset,
@@ -224,6 +250,12 @@ class TransformerDecoderModel(nn.Module):
             C_embedded_nums.append(self.Catagory_embedding_nums[index](C_input[:,start:end].float()))
             start = end
         
+        # numerical_field = field[:num_NUM]
+        # def C_embedded_num_cal(index):
+        #     start = sum(numerical_field[:index])
+        #     end = sum(numerical_field[:index+1])
+        #     return (self.Catagory_embedding_nums[index](C_input[:,start:end].float()))
+        # C_embedded_nums = list(map(C_embedded_num_cal, range(num_NUM)))
         C_embedded_num = torch.cat(C_embedded_nums, dim = 1)
         
         catagorical_filed_nodes = sum(field[-num_CAT:]) # pick catagory fields
@@ -289,10 +321,11 @@ class TransformerDecoderModel(nn.Module):
         
         # print('after',S_embedded[0][0])
         output = self.MLP(S_embedded)
-        outputs = []
-        for index, query in enumerate(query_indexs):
-            outputs.append(output[index, query])
-        outputs = torch.stack(outputs, dim = 0)
+        outputs = output[np.arange(len(query_indexs)), query_indexs]
+        # outputs = []
+        # for index, query in enumerate(query_indexs):
+            # outputs.append(output[index, query])
+        # outputs = torch.stack(outputs, dim = 0)
         # output_batch = [output[:,query_indexs][query_indexs[i]] for i in range(batch_size)]
         # print(output_batch)
         return outputs

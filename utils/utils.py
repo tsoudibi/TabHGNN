@@ -1,4 +1,4 @@
-
+import time
 
 DEVICE = 'None'
 def set_DEVICE(device):
@@ -66,3 +66,14 @@ def check_DataFrame_distribution(X_trans):
     for column in X_trans.columns:
         print('%15s' % column, '%6s' % X_trans[column].min(),'%6s' % X_trans[column].max(), '%6s' % X_trans[column].nunique())
         columns_range[column] = {}
+
+T = time.time()
+PRINT_TIME = True
+def set_PRINT_TIME(flag):
+    global PRINT_TIME
+    PRINT_TIME = flag
+def print_checkpoint_time(name):
+    if PRINT_TIME:
+        global T
+        print('{0: <10}'.format(name),time.time()-T)
+        T = time.time()

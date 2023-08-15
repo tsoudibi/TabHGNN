@@ -5,7 +5,6 @@ import random
 import torch
 from torch import Tensor
 from typing import Optional, Tuple
-
 from data.preprocess import POOL_preprocess, POOL_preprocess_inference
 from utils.utils import get_DEVICE
 
@@ -121,16 +120,7 @@ class HGNN_dataset():
         DEVICE = get_DEVICE()
         L, S, C, F = self.nodes_num['L'], self.nodes_num['S'], self.nodes_num['C'], self.nodes_num['F']
 
-        sample_size = len(sample_indices[0])
-        # caculate masking
-        masks = {}
-        
-        tmp_L2S = []
-        tmp_S2C = []
-        for batch_indices in sample_indices:
-            # masked_POOL = self.TRAIN_POOL.iloc[batch_indices] # sample dataframe into shape (10,14)
-            
-            # label to sample
+        def make_L2S(batch_indices):
             tmp = self.MASKS_FULL['L2S']
             tmp = torch.index_select(tmp, 0, torch.tensor(batch_indices, device=DEVICE)) #The returned tensor does not use the same storage as the original tensor
             # tmp = torch.zeros([math.ceil(sample_size/8) * 8, math.ceil(L/8) * 8], dtype=torch.float, device=DEVICE) 
@@ -140,10 +130,11 @@ class HGNN_dataset():
             new_tensor = torch.zeros(*shape, device=DEVICE)
             new_tensor[:tmp.shape[0], :tmp.shape[1]] = tmp
             tmp = new_tensor.view(*shape)
-            tmp_L2S.append(tmp)
+            
+            return tmp
             # masks['L2S'] = tmp.repeat(batch_size,1,1)
             
-
+        def make_S2C(batch_indices):
             # sample to catagory
             tmp = self.MASKS_FULL['S2C']
             tmp = torch.index_select(tmp, 1, torch.tensor(batch_indices, device=DEVICE)) # The returned tensor does not use the same storage as the original tensor
@@ -155,7 +146,19 @@ class HGNN_dataset():
             new_tensor = torch.zeros(*shape,device=DEVICE)
             new_tensor[:tmp.shape[0], :tmp.shape[1]] = tmp
             tmp = new_tensor.view(*shape)
-            tmp_S2C.append(tmp)
+            
+            return tmp
+        
+        
+        sample_size = len(sample_indices[0])
+        # caculate masking
+        masks = {}
+        
+        # tmp_L2S = []
+        # tmp_S2C = []
+
+        tmp_L2S = list(map(make_L2S, sample_indices))
+        tmp_S2C = list(map(make_S2C, sample_indices))
         
         masks['L2S'] = torch.stack(tmp_L2S, dim = 0)
         masks['S2C'] = torch.stack(tmp_S2C, dim = 0)
@@ -307,7 +310,9 @@ class HGNN_dataset():
         label_list = [item for item in label_unique for _ in range(count)]
         label_list.extend(random.sample(label_unique, remainder))
         # sample from indexes
-        indices = [random.choice(self.labe_to_index[label]) for label in label_list]
+        def choice_with_label(lable):
+            return random.choice(self.labe_to_index[lable])
+        indices = list(map(choice_with_label, label_list))
         return indices     
         
     def get_sample(self, sample_size, query_indices = []):
@@ -364,9 +369,9 @@ class HGNN_dataset():
             
         By changing the mask into `SpareTensor` and updating the indices, we can randomly connect nodes to unseen nodes
         '''
-        DEVICE = get_DEVICE()
-        if mask_ratio == 0:
+        if mask_ratio <= 0:
             return mask
+        DEVICE = get_DEVICE()
         unseen_node_indexs_list = list(self.unseen_node_indexs_C.values())
         # print('unseen_node_indexs_list', unseen_node_indexs_list)
         mask_sparse = torch.clone(mask).to_sparse()
@@ -384,13 +389,17 @@ class HGNN_dataset():
             replacement_table = [[unseen_index]*(mask_sparse.indices()[2].max()+1) for unseen_index in unseen_node_indexs_list]
             replacement_table = torch.tensor(replacement_table, device=DEVICE).flatten()
         elif strategy == 'random':
+            def get_random_int(lower_bound, unseen_node_index):
+                return torch.randint(lower_bound, unseen_node_index+1)
             replacement_table = []
             lower_bound = 0
             for unseen_node_index in unseen_node_indexs_list:
-                for _ in range(mask_sparse.indices()[2].max()+1):
-                    replacement_table.append(random.randint(lower_bound, unseen_node_index+1))
+                # for _ in range(mask_sparse.indices()[2].max()+1):
+                    # replacement_table.append(random.randint(lower_bound, unseen_node_index+1))
+                replacement_table.append(torch.randint(lower_bound, unseen_node_index+1, (mask_sparse.indices()[2].max()+1,),device=DEVICE))
                 lower_bound = unseen_node_index+1
-            replacement_table = torch.tensor(replacement_table, device=DEVICE).flatten()
+            replacement_table = torch.stack(replacement_table, dim = 0).flatten()
+            # replacement_table = torch.tensor(replacement_table, device=DEVICE).flatten()
         else:
             raise ValueError('strategy should be either unseen or random')
         

@@ -22,6 +22,7 @@ if __name__ == '__main__':
     set_DEVICE(run_config['device'])
     DEVICE = get_DEVICE()
     set_seed(run_config['random_state'])
+    set_PRINT_TIME(run_config['print_time'])
     os.environ["WANDB_SILENT"] = "true"
     
     # slice K_fold

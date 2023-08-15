@@ -7,7 +7,7 @@ import random
 import pandas as pd
 from tqdm import tqdm, trange
 from model.model import TransformerDecoderModel
-from utils.utils import set_seed, get_DEVICE
+from utils.utils import *
 import wandb
 
 # training
@@ -49,15 +49,16 @@ def train(model : nn.Module,
     else:
         stepper_epoch = range(epochs) 
     for epoch in stepper_epoch:
-        
+        import time 
         '''------------------------training------------------------'''
-        
+        print_checkpoint_time('start')
         QUERY_POOL = list(range(len(datset.FEATURE_POOL)))
         random.shuffle(QUERY_POOL)
         # train
         model.train()
+        print_checkpoint_time('.train')
         # logs
-        loss_log = 0
+        epoch_loss = 0
         AUC_metric = BinaryAUROC().to(DEVICE)
         AUC_metric_test = BinaryAUROC().to(DEVICE)
         
@@ -68,12 +69,12 @@ def train(model : nn.Module,
         else:
             stepper = range(len(datset.FEATURE_POOL)//batch_size)
         for index in stepper: # query through all sample nodes (not infering node)
-            
+            torch.cuda.empty_cache()
             optimizer.zero_grad()
             # pick query nodes
             query_indices = QUERY_POOL[:batch_size]
             QUERY_POOL = QUERY_POOL[batch_size:]
-
+            print_checkpoint_time('QUERY_POOL')
             outputs = model(datset,
                             mode = 'train',
                             query_indices = query_indices,
@@ -81,7 +82,7 @@ def train(model : nn.Module,
                             unseen_rate = unseen_rate,
                             aug_strategy = aug_strategy,
                             )
-            
+            print_checkpoint_time('model')
             # output shape:[q,2], example: torch.Size( 2, 2]
             # tensor([[-0.6845, -0.6323],
             #          [-0.7770, -0.4703]], device='cuda:0', grad_fn=<IndexBackward0>)
@@ -92,34 +93,36 @@ def train(model : nn.Module,
                         
             # caculate loss
             batch_loss = criterion(outputs, torch.tensor(LABEL_POOL_,device=DEVICE))
-            loss_log += batch_loss.item()
+            epoch_loss += batch_loss.item()
             # backpropagation
             batch_loss.backward()
             optimizer.step()
 
             TRUE = np.argmax(LABEL_POOL_,axis=1)
             
-            outputs = outputs.softmax(dim=1)
-            pred_prob_of_is_1 = [probs[1] for probs in outputs] 
+            outputs = outputs.softmax(dim=1).detach().cpu()
+            # pred_prob_of_is_1 = [probs[1] for probs in outputs] 
+            pred_prob_of_is_1 = np.array(outputs)[:,1].tolist()
             # the probability of the query node is 1 (from model output)
             
-            AUC_metric.update(torch.Tensor(pred_prob_of_is_1),torch.Tensor(TRUE))
-            torch.cuda.empty_cache()
+            AUC_metric.update(torch.tensor(pred_prob_of_is_1,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
             iter += 1
             # if iter >= 100:
             #     break
+            print_checkpoint_time('loss')
             if index == len(datset.FEATURE_POOL)//batch_size -1 and verbose >= 2:
                 stepper.set_postfix(AUC=float(AUC_metric.compute()))
                 stepper.update()
                 
-        epoch_loss = loss_log / batch_size
+        torch.cuda.empty_cache()
+        epoch_loss = epoch_loss / batch_size
         epoch_AUC = float(AUC_metric.compute()) 
         AUC_metric.reset()
         if verbose == 1:
             stepper_epoch.set_postfix({'loss_train':epoch_loss, 'AUC_train':epoch_AUC, 'AUC_test':epoch_AUC_test})
         
         '''------------------------evaluate------------------------'''
-        if (epoch+1) % 50 == 0:
+        if (epoch+1) % 1 == 0:
             # evaluate
             model.eval()
             iter = 0
@@ -137,17 +140,20 @@ def train(model : nn.Module,
                     # get the last 'batch_size_test' nodes as query nodes
                     query_indices = QUERY_POOL[:batch_size_test]
                     QUERY_POOL = QUERY_POOL[batch_size_test:]
+                    print_checkpoint_time('QUERY_POOL')
 
                     outputs = model(datset, mode = 'inferring', query_indices = query_indices, K = None)
+                    print_checkpoint_time('infering')
                     LABEL_POOL_ = TEST_LABEL_POOL[query_indices]
                     TRUE = np.argmax(LABEL_POOL_,axis=1)
                     outputs = outputs.softmax(dim=1)
                     pred_prob_of_is_1 = [probs[1] for probs in outputs] 
-                    AUC_metric_test.update(torch.Tensor(pred_prob_of_is_1),torch.Tensor(TRUE))
-                    torch.cuda.empty_cache()
+                    AUC_metric_test.update(torch.tensor(pred_prob_of_is_1,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
+                    print_checkpoint_time('loss')
                     iter += 1
                     # if iter >= 3:
                     #     break
+            torch.cuda.empty_cache()
             epoch_AUC_test = float(AUC_metric_test.compute()) 
             if verbose == 1:
                 stepper_epoch.set_postfix({'loss_train':epoch_loss, 'AUC_train':epoch_AUC, 'AUC_test':epoch_AUC_test})
@@ -155,7 +161,7 @@ def train(model : nn.Module,
             AUC_metric.reset()
             AUC_metric_test.reset()
             # break
-            del loss_log, AUC_metric
+            del AUC_metric_test, AUC_metric
             tmp_log.append(float(epoch_loss))
             tmp__log.append(float(epoch_AUC))
 
