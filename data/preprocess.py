@@ -52,10 +52,10 @@ def POOL_preprocess(df, N_BINS = 100):
         values = X_trans[column].to_numpy().reshape(-1,1)
         values = ct.named_transformers_[column].inverse_transform(values)
         values = (np.unique(values).flatten())
+        values = np.arange(len(values))
         # values = values / max(values)
         # min max scaling
         # values = (values - values.min()) / (values.max() - values.min())
-        print(values)
         C_pool = np.concatenate((C_pool, values, np.array([-1])))
         # print(values)
     catagory_count = 0
@@ -65,7 +65,6 @@ def POOL_preprocess(df, N_BINS = 100):
         catagory_count += len(X_trans[column].unique()) + 1
     C_pool = np.concatenate((C_pool, np.arange(catagory_count)))
 
-    print(X_trans.columns)
     # store the numrical columns' existing values for identifying unseen values
     existing_values = {}
     for column in NUM:

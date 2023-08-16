@@ -77,6 +77,9 @@ class HGNN_dataset():
         # get samples indexs for each label
         self.labe_to_index = {}
         tmp_pool = TRAIN_POOL.copy().reset_index(drop=True)
+        if isinstance(LABEL_COLUMN, list):
+            # LABEL_COLUMN = LABEL_COLUMN[0]
+            raise ValueError('ERROR: multiple label columns are not supported yet')
         for label in tmp_pool[LABEL_COLUMN].unique():
             self.labe_to_index[label] = (tmp_pool[tmp_pool[LABEL_COLUMN] == label].index).tolist()
         
@@ -241,7 +244,6 @@ class HGNN_dataset():
         # print('S_input', S_input.type(), S_input.shape)
         # C 
         C_input = torch.tensor(np.array([self.C_POOL]), device=DEVICE).reshape(-1,1)
-        print(C_input)
         # print('C_input', C_input.type(), C_input.shape)
         # F 
         F_input = torch.tensor([range(F)], device=DEVICE).reshape(-1,1)

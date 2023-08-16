@@ -130,3 +130,57 @@ electricity_num:
     - vicdemand
     - transfer
   uniform:
+
+eye_movements_cat:
+  full_name: eye_movements_cat
+  file_path: data/RAW_data/eye_movements_cat.csv
+  CAT:
+    - P1stFixation
+    - P2stFixation
+    - nextWordRegress
+    - label
+  NUM:
+    - lineNo
+    - assgNo
+    - prevFixDur
+    - firstfixDur
+    - firstPassFixDur
+    - nextFixDur
+    - firstSaccLen
+    - lastSaccLen
+    - prevFixPos
+    - landingPos
+    - leavingPos
+    - totalFixDur
+    - meanFixDur
+    - regressLen
+    - regressDur
+    - pupilDiamMax
+    - pupilDiamLag
+    - timePrtctg
+    - titleNo
+    - wordNo
+  TARGET:
+    label
+  quntile:
+    - lineNo
+    - assgNo
+    - prevFixDur
+    - firstfixDur
+    - firstPassFixDur
+    - nextFixDur
+    - firstSaccLen
+    - lastSaccLen
+    - prevFixPos
+    - landingPos
+    - leavingPos
+    - totalFixDur
+    - meanFixDur
+    - regressLen
+    - regressDur
+    - pupilDiamMax
+    - pupilDiamLag
+    - timePrtctg
+    - titleNo
+    - wordNo
+  uniform:
