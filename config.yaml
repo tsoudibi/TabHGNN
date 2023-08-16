@@ -1,9 +1,9 @@
 run_config:
   print_time: False
   device: cuda
-  dataset: compas
+  dataset: eye_movements_num
   max_epoch: 1000
-  learning_rate: 0.0001
+  learning_rate: 0.001
   batch_size: 128
   batch_size_test: 12
   K: 100
@@ -12,7 +12,7 @@ run_config:
   propagation_steps: 1
   unseen_rate: 0
   aug_strategy: "random"
-  N_BINS: 100
+  N_BINS: 500
   random_state: 42
   evaluate_stride: 10
 

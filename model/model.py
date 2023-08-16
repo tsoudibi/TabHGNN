@@ -114,7 +114,7 @@ class TransformerDecoderModel(nn.Module):
         self.Lable_embedding = nn.Embedding(L, embedding_dim, dtype=torch.float)
     
         # for every numrical filed, construct it's own Linear embedding layer
-        self.Catagory_embedding_nums = []
+        self.Catagory_embedding_nums = nn.ModuleList()
         for i in range(num_NUM):
             self.Catagory_embedding_nums.append(
                 nn.Linear(C_dim, embedding_dim, dtype=torch.float, device=DEVICE)
@@ -242,7 +242,6 @@ class TransformerDecoderModel(nn.Module):
         
         S_embedded = S_input.float()
         print_checkpoint_time('get L+S_embedded')
-        
         # for every numrical filed, use it's own Linear embedding layer
         field = dataset.nodes_of_fields
 
@@ -265,15 +264,19 @@ class TransformerDecoderModel(nn.Module):
         
         C_embedded_num = ((C_inputs.unsqueeze(-1) * weights.unsqueeze(0)).sum(-1) + biases.unsqueeze(0))
         
-
-        catagorical_filed_nodes = sum(field[-num_CAT:]) # pick catagory fields
-        C_embedded_cat = self.Catagory_embedding_cat(C_input[:,-catagorical_filed_nodes:].squeeze(2).long()).float() 
-        # print(C_embedded_num.shape, C_embedded_cat.shape)
-        C_embedded = torch.cat([C_embedded_num, C_embedded_cat], dim = 1)
+        
+        if num_CAT > 0:
+            catagorical_filed_nodes = sum(field[-num_CAT:]) # pick catagory fields
+            C_embedded_cat = self.Catagory_embedding_cat(C_input[:,-catagorical_filed_nodes:].squeeze(2).long()).float() 
+            # print(C_embedded_num.shape, C_embedded_cat.shape)
+            C_embedded = torch.cat([C_embedded_num, C_embedded_cat], dim = 1)
+        else:
+            C_embedded = C_embedded_num
         print_checkpoint_time('get C_embedded')
         
         F_embedded = self.Field_embedding(F_input.long()).squeeze(2).float()
         print_checkpoint_time('get F_embedded')
+        # print(C_embedded)
         # print(query_indices, K)
         # print(L_embedded.shape, S_embedded.shape, C_embedded.shape, F_embedded.shape)
         

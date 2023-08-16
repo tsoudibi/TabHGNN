@@ -3,6 +3,7 @@ from sklearn.preprocessing import KBinsDiscretizer
 import numpy as np
 import pandas as pd
 from utils.utils import get_feilds_attributes, get_Discretizer_attributes
+from utils.utils import *
 
 def POOL_preprocess(df, N_BINS = 100):
     '''
@@ -16,7 +17,7 @@ def POOL_preprocess(df, N_BINS = 100):
         NUM_vs_CAT: tuple, (number of numerical columns, number of categorical columns - 1) "in feature field, do not include label column"
         existing_values: dict, {column name: sorted list of existing values}
     '''
-    
+    # df.drop(columns = ['workclass','education','marital-status','occupation','relationship','race','gender','native-country'], inplace = True, errors = 'ignore')
     NUM, CAT, TARGET = get_feilds_attributes()
     quantile, uniform = get_Discretizer_attributes()
     
@@ -50,7 +51,11 @@ def POOL_preprocess(df, N_BINS = 100):
     for column in NUM:
         values = X_trans[column].to_numpy().reshape(-1,1)
         values = ct.named_transformers_[column].inverse_transform(values)
-        values = np.unique(values).flatten()
+        values = (np.unique(values).flatten())
+        # values = values / max(values)
+        # min max scaling
+        # values = (values - values.min()) / (values.max() - values.min())
+        print(values)
         C_pool = np.concatenate((C_pool, values, np.array([-1])))
         # print(values)
     catagory_count = 0
@@ -60,7 +65,7 @@ def POOL_preprocess(df, N_BINS = 100):
         catagory_count += len(X_trans[column].unique()) + 1
     C_pool = np.concatenate((C_pool, np.arange(catagory_count)))
 
-
+    print(X_trans.columns)
     # store the numrical columns' existing values for identifying unseen values
     existing_values = {}
     for column in NUM:
@@ -85,6 +90,8 @@ def POOL_preprocess(df, N_BINS = 100):
         offset += (X_trans[column].max() - X_trans[column].min() + 1) + 1
     
     X_trans = X_trans.astype(int).reset_index(drop = True)
+    print(X_trans)
+    print(check_DataFrame_distribution(X_trans))
     return X_trans, (ct, OE_list, NUM, CAT, existing_values), (num_NUM, num_CAT - 1), C_pool
     # -1 is for the label column 
     

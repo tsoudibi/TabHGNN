@@ -122,9 +122,15 @@ class HGNN_dataset():
         sample_size = len(sample_indices[0])
         # caculate masking
         masks = {}
+        # print('sample',sample_indices[0][0])
         masks['L2S'] = self.MASKS_FULL['L2S'][sample_indices]
+        # print('maskL2S',self.MASKS_FULL['L2S'][sample_indices[0][0]])
         masks['S2C'] = self.MASKS_FULL['S2C'][:,sample_indices].permute(1,0,2).contiguous()
+        # print('catagory',self.FEATURE_POOL.iloc[sample_indices[0][0]].values)
+        # print('maskS2C',masks['S2C'][0].T[0][self.FEATURE_POOL.iloc[sample_indices[0][0]].values])
         masks['C2F'] = self.MASKS_FULL['C2F'].repeat(len(query_indices),1,1)
+        # print(masks['C2F'][0][0].shape)
+        # print('maskC2F',masks['C2F'][0].T[self.FEATURE_POOL.iloc[sample_indices[0][0]].values])
         self.MASKS = masks
         self.nodes_num['K'] = sample_size
         
@@ -162,6 +168,8 @@ class HGNN_dataset():
         tmp[torch.arange(len(self.FEATURE_POOL), device=DEVICE).unsqueeze(-1), torch.tensor(tmp_df.values, device=DEVICE)] = 1
         tmp = tmp.T.contiguous()
         masks['S2C'] = tmp
+        # print('S2C', masks['S2C'].shape)
+        # print('S2C', masks['S2C'][18,0])
 
         # catagory to field
         # to do : this is wrong , should connect all catagory nodes (even unseen nodes))
@@ -171,6 +179,8 @@ class HGNN_dataset():
             for j in (unique_items[i]):
                 tmp[i][j] = 1
         masks['C2F'] = tmp
+        # print('C2F', masks['C2F'].shape)
+        # print('C2F', sum(masks['C2F'][0]))
         self.MASKS = masks
         self.MASKS_FULL = masks
         
@@ -231,6 +241,7 @@ class HGNN_dataset():
         # print('S_input', S_input.type(), S_input.shape)
         # C 
         C_input = torch.tensor(np.array([self.C_POOL]), device=DEVICE).reshape(-1,1)
+        print(C_input)
         # print('C_input', C_input.type(), C_input.shape)
         # F 
         F_input = torch.tensor([range(F)], device=DEVICE).reshape(-1,1)

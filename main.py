@@ -28,6 +28,7 @@ if __name__ == '__main__':
     
     # select dataset 
     main_df = pd.read_csv(select_dataset(run_config['dataset']))
+    main_df = randomize_df(main_df)
 
     for index, (train_index, test_index) in enumerate(kf.split(main_df)):
         if index !=0:

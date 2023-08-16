@@ -53,3 +53,80 @@ compas:
     - age
     - juv_misd_count
     - priors_count
+
+
+eye_movements_num:
+  full_name: eye_movements_num
+  file_path: data/RAW_data/eye_movements_num.csv
+  CAT:
+    - label
+  NUM:
+    - lineNo
+    - assgNo
+    - prevFixDur
+    - firstfixDur
+    - firstPassFixDur
+    - nextFixDur
+    - firstSaccLen
+    - lastSaccLen
+    - prevFixPos
+    - landingPos
+    - leavingPos
+    - totalFixDur
+    - meanFixDur
+    - regressLen
+    - regressDur
+    - pupilDiamMax
+    - pupilDiamLag
+    - timePrtctg
+    - titleNo
+    - wordNo
+  TARGET:
+    label
+  quntile:
+    - lineNo
+    - assgNo
+    - prevFixDur
+    - firstfixDur
+    - firstPassFixDur
+    - nextFixDur
+    - firstSaccLen
+    - lastSaccLen
+    - prevFixPos
+    - landingPos
+    - leavingPos
+    - totalFixDur
+    - meanFixDur
+    - regressLen
+    - regressDur
+    - pupilDiamMax
+    - pupilDiamLag
+    - timePrtctg
+    - titleNo
+    - wordNo
+  uniform:
+
+electricity_num:
+  full_name: electricity_num
+  file_path: data/RAW_data/electricity_num.csv
+  CAT:
+    - class
+  NUM:
+    - date
+    - period
+    - nswprice
+    - nswdemand
+    - vicprice
+    - vicdemand
+    - transfer
+  TARGET:
+    class
+  quntile:
+    - date
+    - period
+    - nswprice
+    - nswdemand
+    - vicprice
+    - vicdemand
+    - transfer
+  uniform:

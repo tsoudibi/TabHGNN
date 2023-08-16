@@ -31,7 +31,10 @@ def get_Discretizer_attributes():
 def get_label_colunm():
     return DATA_CONFIG[dataset]['TARGET']
 
+SEED = 0
 def set_seed(seed):
+    global SEED
+    SEED = seed
     try:
         import tensorflow as tf
         tf.random.set_random_seed(seed)
@@ -57,6 +60,10 @@ def set_seed(seed):
     import os
     os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":16:8"
+    
+def randomize_df(df):
+    df = df.sample(frac=1, random_state = SEED).reset_index(drop=True)
+    return df
     
 def check_DataFrame_distribution(X_trans):
     columns_range = {}
