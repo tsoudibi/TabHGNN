@@ -25,21 +25,25 @@ def POOL_preprocess(df, N_BINS = 100):
     
     pipe_uniform = KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='uniform', subsample=None)
     pipe_quantile = KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='quantile', subsample=None)
+    
+    ColumnTransformers_list = []
+    # print(uniform, quantile)
+    # print(not isinstance(uniform, list), not isinstance(quantile, list))
+    if not isinstance(uniform, list) and not isinstance(quantile, list):
+        raise ValueError('quantile and uniform can not be empty at the same time')
+    if isinstance(uniform, list):
+        for column in uniform:
+            ColumnTransformers_list.append((column, pipe_uniform, [column]))
+    if isinstance(quantile, list):
+        for column in quantile:
+            ColumnTransformers_list.append((column, pipe_quantile, [column]))
+    
     ct = ColumnTransformer(
-        [(column, pipe_uniform, [column]) for column in uniform] + 
-        [(column, pipe_quantile, [column]) for column in quantile]
+        ColumnTransformers_list
          ,remainder = 'passthrough', verbose_feature_names_out = False) # make sure columns are unique
-    # ct = ColumnTransformer([
-    #     ("age", KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='uniform', subsample=None), ["age"]),
-    #     ("fnlwgt", KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='quantile', subsample=None), ["fnlwgt"]),
-    #     ("educational-num", KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='quantile', subsample=None), ["educational-num"]),
-    #     ("capital-gain", KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='uniform', subsample=None), ["capital-gain"]),
-    #     ("capital-loss", KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='uniform', subsample=None), ["capital-loss"]),
-    #     ("hours-per-week", KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='uniform', subsample=None), ["hours-per-week"]),
-    #      ],remainder = 'passthrough', verbose_feature_names_out = False) # make sure columns are unique
+    
     ct.set_output(transform = 'pandas')
     X_trans = ct.fit_transform(df) 
-
     # print(X_trans[NUM])
     C_pool = np.array([])
 

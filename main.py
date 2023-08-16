@@ -12,8 +12,6 @@ import os
 if __name__ == '__main__': 
     with open('config.yaml', 'r') as stream:
         config = yaml.load(stream, Loader=yaml.Loader)
-    with open('config.yaml', 'r') as stream:
-        config = yaml.load(stream, Loader=yaml.Loader)
     # data_config
     run_config = config['run_config']
     wandb_config = config['wandb_config']

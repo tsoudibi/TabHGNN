@@ -77,8 +77,8 @@ class HGNN_dataset():
         # get samples indexs for each label
         self.labe_to_index = {}
         tmp_pool = TRAIN_POOL.copy().reset_index(drop=True)
-        for label in tmp_pool['income'].unique():
-            self.labe_to_index[label] = (tmp_pool[tmp_pool['income'] == label].index).tolist()
+        for label in tmp_pool[LABEL_COLUMN].unique():
+            self.labe_to_index[label] = (tmp_pool[tmp_pool[LABEL_COLUMN] == label].index).tolist()
         
         self.TRAIN_POOL = TRAIN_POOL
         self.TEST_POOL = TEST_POOL

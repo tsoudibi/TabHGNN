@@ -1,4 +1,5 @@
 adult:
+  full_name: adult income 
   file_path: data/RAW_data/adult.csv
   CAT: 
     - workclass
@@ -27,4 +28,28 @@ adult:
     - capital-gain
     - capital-loss
     - hours-per-week  
-  
+
+compas:
+  full_name: compas-two-years
+  file_path: data/RAW_data/compas.csv
+  CAT:
+    - sex
+    - age_cat_25-45
+    - age_cat_Greaterthan45
+    - age_cat_Lessthan25
+    - race_African-American
+    - race_Caucasian
+    - c_charge_degree_F
+    - c_charge_degree_M
+    - twoyearrecid
+  NUM:
+    - age
+    - juv_misd_count
+    - priors_count
+  TARGET:
+    twoyearrecid
+  quntile:
+  uniform:
+    - age
+    - juv_misd_count
+    - priors_count

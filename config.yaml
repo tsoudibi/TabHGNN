@@ -1,9 +1,9 @@
 run_config:
   print_time: False
   device: cuda
-  dataset: adult
+  dataset: compas
   max_epoch: 1000
-  learning_rate: 0.001
+  learning_rate: 0.0001
   batch_size: 128
   batch_size_test: 12
   K: 100
