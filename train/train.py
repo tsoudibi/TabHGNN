@@ -117,7 +117,7 @@ def train(model : nn.Module,
             # the probability of the query node is 1 (from model output)
             train_metric.update(torch.tensor(preds,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
             # AUC_metric.update(torch.tensor(pred_prob_of_is_1,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
-            iter += 1
+            # iter += 1
             # if iter >= 100:
             #     break
             print_checkpoint_time('loss 2')
@@ -151,14 +151,19 @@ def train(model : nn.Module,
                     # get the last 'batch_size_test' nodes as query nodes
                     query_indices = QUERY_POOL[:batch_size_test]
                     QUERY_POOL = QUERY_POOL[batch_size_test:]
+                    # print(len(QUERY_POOL))
                     print_checkpoint_time('QUERY_POOL')
 
-                    outputs = model(datset, mode = 'inferring', query_indices = query_indices, K = None)
+                    outputs = model(datset, 
+                                    mode = 'inferring', 
+                                    query_indices = query_indices, 
+                                    K = None)
                     print_checkpoint_time('infering')
                     LABEL_POOL_ = TEST_LABEL_POOL[query_indices]
                     
                     if get_task() == 'classification':
                         TRUE = np.argmax(LABEL_POOL_,axis=1)
+                        # print(outputs.softmax(dim=1)[0])
                         preds = np.array(outputs.softmax(dim=1).detach().cpu()).tolist()
                     elif get_task() == 'regression':
                         TRUE = LABEL_POOL_
@@ -167,9 +172,9 @@ def train(model : nn.Module,
                     # AUC_metric_test.update(torch.tensor(pred_prob_of_is_1,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
                     test_metric.update(torch.tensor(preds,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
                     print_checkpoint_time('loss')
-                    iter += 1
-                    # if iter >= 3:
-                    #     break
+                    # iter += 1
+                    # if iter >= 100:
+                        # break
             torch.cuda.empty_cache()
             epoch_metric_test = float(test_metric.compute()) 
             # epoch_metric_test = float(AUC_metric_test.compute()) 

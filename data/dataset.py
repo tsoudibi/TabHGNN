@@ -263,18 +263,19 @@ class HGNN_dataset():
         Sample equally from each label with required sample size\\
         forced to make balenced sample
         '''
-        # decide each label's number of samples (fourced to be balenced if possible) 
-        label_list = []
-        label_unique = list(self.labe_to_index.keys())
-        count = sample_size // len(label_unique)
-        remainder = sample_size % len(label_unique)
-        label_list = [item for item in label_unique for _ in range(count)]
-        label_list.extend(random.sample(label_unique, remainder))
-        # sample from indexes
-        def choice_with_label(lable):
-            return random.choice(self.labe_to_index[lable])
-        indices = list(map(choice_with_label, label_list))
-        return indices     
+        # # decide each label's number of samples (fourced to be balenced if possible) 
+        # label_list = []
+        # label_unique = list(self.labe_to_index.keys())
+        # count = sample_size // len(label_unique)
+        # remainder = sample_size % len(label_unique)
+        # label_list = [item for item in label_unique for _ in range(count)]
+        # label_list.extend(random.sample(label_unique, remainder))
+        # # sample from indexes
+        # def choice_with_label(lable):
+        #     return random.choice(self.labe_to_index[0]+self.labe_to_index[1])
+        # indices = list(map(choice_with_label, label_list))
+        # return indices     
+        return torch.randperm(len(self.TRAIN_POOL))[:sample_size].tolist()
         
     def get_sample(self, sample_size, query_indices = []):
         '''get sample nodes indices, and update mask and input tensor
