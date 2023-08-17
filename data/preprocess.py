@@ -105,8 +105,8 @@ def POOL_preprocess(df, N_BINS = 100):
         offset += (X_trans[column].max() - X_trans[column].min() + 1) + 1
     
     X_trans = X_trans.astype(int).reset_index(drop = True)
-    print(X_trans)
-    print(check_DataFrame_distribution(X_trans))
+    # print(X_trans)
+    # print(check_DataFrame_distribution(X_trans))
     return X_trans, (ct, OE_list, NUM, CAT, existing_values), NUM_vs_CAT, C_pool
     # -1 is for the label column 
     
@@ -164,5 +164,5 @@ def POOL_preprocess_inference(df: pd.DataFrame,
         X_trans[column] = X_trans[column].apply(lambda x: x + offset if x != -1 else unseen_node_indexs[column])
     
     X_trans = X_trans.astype(int).reset_index(drop = True) 
-    check_DataFrame_distribution(X_trans)
+    # check_DataFrame_distribution(X_trans)
     return X_trans, unseen_node_indexs 

@@ -7,6 +7,7 @@ import yaml
 import xgboost as xgb
 from sklearn.model_selection import KFold
 from sklearn.metrics import roc_auc_score
+from sklearn.metrics import accuracy_score
 import os
 if __name__ == '__main__': 
     with open('config.yaml', 'r') as stream:
@@ -27,12 +28,18 @@ if __name__ == '__main__':
     
     # select dataset 
     main_df = pd.read_csv(select_dataset(run_config['dataset']))
+    # main_df = randomize_df(main_df)
+    # main_df = POOL_preprocess(main_df)
     TARGET = get_label_colunm()
     kf = KFold(n_splits=5, shuffle=True)
     AUCS = []
+    ACCS = []
     # 進行5-fold交叉驗證
     for index, (train_index, test_index) in enumerate(kf.split(main_df)):
         X_train, X_test = main_df.loc[train_index], main_df.loc[test_index]
+        X_train, inference_package,_,_ = POOL_preprocess(X_train, N_BINS = 100)
+        X_test, _ = POOL_preprocess_inference(X_test, inference_package)
+        # print(X_train)
         Y_train, Y_test = X_train[TARGET] - X_train[TARGET].min(), X_test[TARGET] - X_test[TARGET].min()
         X_train, X_test = X_train.drop(columns=TARGET), X_test.drop(columns=TARGET)
         print(f'Fold {index}:')
@@ -42,7 +49,11 @@ if __name__ == '__main__':
         model = xgb.XGBClassifier()
         model.fit(X_train, Y_train)
         Y_prob = model.predict_proba(X_test)  # 预测概率
+        acc = accuracy_score(Y_test, model.predict(X_test))
         auc = roc_auc_score(Y_test, Y_prob[:, 1])
         AUCS.append(auc)
+        ACCS.append(acc)
         print(f'auc: {auc}')
+        print(f'acc: {acc}')
     print(f'Average AUC: {np.mean(AUCS)}')
+    print(f'Average ACC: {np.mean(ACCS)}')
