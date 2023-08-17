@@ -275,7 +275,7 @@ class HGNN_dataset():
         #     return random.choice(self.labe_to_index[0]+self.labe_to_index[1])
         # indices = list(map(choice_with_label, label_list))
         # return indices     
-        return torch.randperm(len(self.TRAIN_POOL))[:sample_size].tolist()
+        return torch.randperm(len(self.TRAIN_POOL),device=get_DEVICE())[:sample_size].tolist()
         
     def get_sample(self, sample_size, query_indices = []):
         '''get sample nodes indices, and update mask and input tensor
