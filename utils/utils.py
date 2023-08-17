@@ -12,10 +12,6 @@ DATA_CONFIG = {}
 dataset = 'None'
 with open('./data/RAW_data/data_configs.yml', 'r') as stream:
     DATA_CONFIG = yaml.load(stream, Loader=yaml.Loader)
-    if DATA_CONFIG[dataset]['NUM'] == None:
-        DATA_CONFIG[dataset]['NUM'] = []
-    if DATA_CONFIG[dataset]['CAT'] == None:
-        DATA_CONFIG[dataset]['CAT'] = []
 def get_DATA_CONFIG():
     return DATA_CONFIG
 
@@ -23,6 +19,10 @@ def select_dataset(name):
     if name in DATA_CONFIG.keys():
         global dataset
         dataset = name
+        if DATA_CONFIG[dataset]['NUM'] == None:
+            DATA_CONFIG[dataset]['NUM'] = []
+        if DATA_CONFIG[dataset]['CAT'] == None:
+            DATA_CONFIG[dataset]['CAT'] = []
         print('=================[dataset is set to', name,']=================')
     else:
         raise ValueError('ERROR: dataset name is not in config file')
@@ -33,6 +33,14 @@ def get_feilds_attributes():
 def get_Discretizer_attributes():
     return DATA_CONFIG[dataset]['quntile'], DATA_CONFIG[dataset]['uniform']
 def get_label_colunm():
+    return DATA_CONFIG[dataset]['TARGET']
+def get_task():
+    return DATA_CONFIG[dataset]['task']
+def get_num_classes():
+    return DATA_CONFIG[dataset]['num_classes']
+def get_num_feature():
+    return DATA_CONFIG[dataset]['num_feature']
+def get_target():
     return DATA_CONFIG[dataset]['TARGET']
 
 SEED = 0

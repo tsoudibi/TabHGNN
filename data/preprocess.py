@@ -24,6 +24,18 @@ def POOL_preprocess(df, N_BINS = 100):
     num_CAT = len(CAT)
     num_NUM = len(NUM)  
     
+        # feature num of each type
+    if TARGET in NUM:
+        if get_task() != 'regression':
+            raise ValueError('TARGET is numerical, but task is not regression')
+        NUM_vs_CAT = (num_NUM - 1, num_CAT)
+    elif TARGET in CAT:
+        if get_task() != 'classification':
+            raise ValueError('TARGET is categorical, but task is not classification')
+        NUM_vs_CAT = (num_NUM, num_CAT - 1)
+    else:
+        raise ValueError('TARGET is not in NUM or CAT')
+    
     pipe_uniform = KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='uniform', subsample=None)
     pipe_quantile = KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='quantile', subsample=None)
     
@@ -48,7 +60,9 @@ def POOL_preprocess(df, N_BINS = 100):
     # print(X_trans[NUM])
     C_pool = np.array([])
 
-    for column in NUM:
+    for column in NUM :
+        if column == TARGET:# if the column is the label column, skip it(do not add it to C_pool)
+            continue
         values = X_trans[column].to_numpy().reshape(-1,1)
         values = ct.named_transformers_[column].inverse_transform(values)
         values = (np.unique(values).flatten())
@@ -60,7 +74,7 @@ def POOL_preprocess(df, N_BINS = 100):
         # print(values)
     catagory_count = 0
     for column in CAT:
-        if column == TARGET:
+        if column == TARGET: # if the column is the label column, skip it(do not add it to C_pool)
             continue
         catagory_count += len(X_trans[column].unique()) + 1
     C_pool = np.concatenate((C_pool, np.arange(catagory_count)))
@@ -85,13 +99,15 @@ def POOL_preprocess(df, N_BINS = 100):
     # each column has it's own number of unique values. '+1' is for unseen values
     offset = 0
     for column in NUM + CAT:
+        if column == TARGET: # if the column is the label column, skip it(do not add it to C_pool)
+            continue
         X_trans[column] = X_trans[column].apply(lambda x: x + offset)
         offset += (X_trans[column].max() - X_trans[column].min() + 1) + 1
     
     X_trans = X_trans.astype(int).reset_index(drop = True)
     print(X_trans)
     print(check_DataFrame_distribution(X_trans))
-    return X_trans, (ct, OE_list, NUM, CAT, existing_values), (num_NUM, num_CAT - 1), C_pool
+    return X_trans, (ct, OE_list, NUM, CAT, existing_values), NUM_vs_CAT, C_pool
     # -1 is for the label column 
     
 
@@ -121,6 +137,8 @@ def POOL_preprocess_inference(df: pd.DataFrame,
     unseen_node_indexs = {}
     offset = 0
     for col in NUM + CAT:
+        if col == get_label_colunm():
+            continue
         unseen_node_indexs[col] = (int(len(existing_values[col])) + offset )
         offset += int(len(existing_values[col])) + 1
     
@@ -129,13 +147,22 @@ def POOL_preprocess_inference(df: pd.DataFrame,
     # apply Ordinal encoding on columns, and make all columns' catagory unique
     offset = 0
     for column in NUM + CAT:
+        if column == get_label_colunm(): # if the column is the label column, skip it(do not add it to C_pool)
+            continue
         OE = OE_list[column]
         X_trans[column] = OE.transform(X_trans[[column]]) # use fitted OE to transform, the unseen values will be encoded as -1
         if -1 in X_trans[column].tolist():
             print('[preprocess]: detected unseen values in column', column)
         X_trans[column] = X_trans[column].apply(lambda x: x + offset if x != -1 else unseen_node_indexs[column])
         offset = unseen_node_indexs[column] + 1  
-
+    # produce OE on TARGET column last
+    for column in [get_target()]:
+        OE = OE_list[column]
+        X_trans[column] = OE.transform(X_trans[[column]]) # use fitted OE to transform, the unseen values will be encoded as -1
+        if -1 in X_trans[column].tolist():
+            print('[preprocess]: detected unseen values in column', column)
+        X_trans[column] = X_trans[column].apply(lambda x: x + offset if x != -1 else unseen_node_indexs[column])
     
     X_trans = X_trans.astype(int).reset_index(drop = True) 
+    check_DataFrame_distribution(X_trans)
     return X_trans, unseen_node_indexs 

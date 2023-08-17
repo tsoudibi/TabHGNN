@@ -30,6 +30,8 @@ if __name__ == '__main__':
     main_df = pd.read_csv(select_dataset(run_config['dataset']))
     main_df = randomize_df(main_df)
 
+    if get_task() == 'regression':
+        raise NotImplementedError('regression task is not propery supported yet')
     for index, (train_index, test_index) in enumerate(kf.split(main_df)):
         if index !=0:
             continue

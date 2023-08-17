@@ -110,8 +110,10 @@ class TransformerDecoderModel(nn.Module):
         L, S, C, F = dataset.nodes_num['L'], dataset.nodes_num['S'], dataset.nodes_num['C'], dataset.nodes_num['F']
         num_NUM , num_CAT = dataset.NUM_vs_CAT
         
-
-        self.Lable_embedding = nn.Embedding(L, embedding_dim, dtype=torch.float)
+        if get_task() == 'classification':
+            self.Lable_embedding = nn.Embedding(L, embedding_dim, dtype=torch.float)
+        elif get_task() == 'regression':
+            self.Lable_embedding = nn.Linear(L_dim, embedding_dim, dtype=torch.float)
     
         # for every numrical filed, construct it's own Linear embedding layer
         self.Catagory_embedding_nums = nn.ModuleList()
@@ -131,9 +133,16 @@ class TransformerDecoderModel(nn.Module):
         )
         
         # downstream task
-        self.MLP = nn.Sequential(
-            nn.Linear(embedding_dim, 2),
-        )
+        if get_task() == 'classification':
+            self.MLP = nn.Sequential(
+                nn.Linear(embedding_dim, get_num_classes()),
+            )
+        elif get_task() == 'regression':
+            self.MLP = nn.Sequential(
+                nn.Linear(embedding_dim, 1),
+            )
+        else:
+            raise NotImplementedError('task', get_task(), 'not implemented')
         
         # initialize MASK_FULL
         dataset.make_mask_all()
@@ -163,9 +172,8 @@ class TransformerDecoderModel(nn.Module):
             def maskout_label(index, sample_indice):
                 query_index = sample_indice.index(query_indices[index]) # query_index: index of query node in sample_indice of the batch
                 # L2S mask shape : B, S, L
-                # self.tmpmask_L2S[index, query_index][:-1] = 1 # connect to all label nodes except the unseen label
-                self.tmpmask_L2S[index, query_index] = 0
-                self.tmpmask_L2S[index, query_index][L-1] = 1 # make it as unseen label
+                self.tmpmask_L2S[index, query_index] = 1
+                self.tmpmask_L2S[index, query_index][L-1] = 0  # connect to all label nodes except the unseen label
             _ = list(map(maskout_label, range(len(sample_indices)), sample_indices))
         else:
             self.tmpmask_L2S = dataset.MASKS['L2S'].clone().detach()
@@ -238,7 +246,10 @@ class TransformerDecoderModel(nn.Module):
 
         # for S and C, we use two different embedding methods, for CAT and NUM, respectively
         # Squeeze for making batch dimantion
-        L_embedded = self.Lable_embedding(L_input.long()).squeeze(2).float()
+        if get_task() == 'classification':
+            L_embedded = self.Lable_embedding(L_input.long()).squeeze(2).float()
+        elif get_task() == 'regression':
+            L_embedded = self.Lable_embedding(L_input.float()).squeeze(2).float()
         
         S_embedded = S_input.float()
         print_checkpoint_time('get L+S_embedded')

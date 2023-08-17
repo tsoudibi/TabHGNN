@@ -29,6 +29,7 @@ adult:
     - capital-gain
     - capital-loss
     - hours-per-week  
+  uniform:
 
 compas:
   full_name: compas-two-years
@@ -111,33 +112,6 @@ eye_movements_num:
     - wordNo
   uniform:
 
-electricity_num:
-  full_name: electricity_num
-  file_path: data/RAW_data/electricity_num.csv
-  task: classification
-  num_classes: 2
-  CAT:
-    - class
-  NUM:
-    - date
-    - period
-    - nswprice
-    - nswdemand
-    - vicprice
-    - vicdemand
-    - transfer
-  TARGET:
-    class
-  quntile:
-    - date
-    - period
-    - nswprice
-    - nswdemand
-    - vicprice
-    - vicdemand
-    - transfer
-  uniform:
-
 eye_movements_cat:
   full_name: eye_movements_cat
   file_path: data/RAW_data/eye_movements_cat.csv
@@ -192,4 +166,63 @@ eye_movements_cat:
     - timePrtctg
     - titleNo
     - wordNo
+  uniform:
+
+electricity_num:
+  full_name: electricity_num
+  file_path: data/RAW_data/electricity_num.csv
+  task: classification
+  num_classes: 2
+  CAT:
+    - class
+  NUM:
+    - date
+    - period
+    - nswprice
+    - nswdemand
+    - vicprice
+    - vicdemand
+    - transfer
+  TARGET:
+    class
+  quntile:
+    - date
+    - period
+    - nswprice
+    - nswdemand
+    - vicprice
+    - vicdemand
+    - transfer
+  uniform:
+
+houses_cat:
+  full_name: Brazilian_houses_cat
+  file_path: data/RAW_data/Brazilian_houses_cat.csv
+  task: regression
+  num_classes: None
+  CAT:
+    - city
+    - animal
+    - furniture
+  NUM:
+    - area
+    - rooms
+    - bathroom
+    - parking_spaces
+    - hoa_(BRL)
+    - rent_amount_(BRL)
+    - property_tax_(BRL)
+    - fire_insurance_(BRL)
+    - total_(BRL)
+  TARGET:
+    total_(BRL)
+  quntile:
+    - area
+    - rooms
+    - bathroom
+    - parking_spaces
+    - hoa_(BRL)
+    - rent_amount_(BRL)
+    - property_tax_(BRL)
+    - fire_insurance_(BRL)
   uniform:

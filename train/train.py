@@ -33,10 +33,17 @@ def train(model : nn.Module,
           log_name : str = 'unnamed',
           ):
     DEVICE = get_DEVICE()
-    LABEL_POOL = datset.LABEL_POOL
-    TEST_LABEL_POOL = datset.TEST_LABEL_POOL
-    weight = torch.from_numpy(np.array([0.2, 1])).float().to(DEVICE)
-    criterion = nn.CrossEntropyLoss(weight)
+    if get_task() == 'classification':
+        LABEL_POOL = datset.LABEL_POOL
+        TEST_LABEL_POOL = datset.TEST_LABEL_POOL
+    elif get_task() == 'regression':
+        LABEL_POOL = datset.ORIGINAL_LABEL_POOL
+        TEST_LABEL_POOL = datset.ORIGINAL_TEST_LABEL_POOL
+    if get_task() == 'classification':
+        weight = torch.from_numpy(np.array([0.2, 1])).float().to(DEVICE)
+        criterion = nn.CrossEntropyLoss(weight)
+    elif get_task() == 'regression':
+        criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
     
     epoch_AUC = 0
@@ -57,10 +64,9 @@ def train(model : nn.Module,
         print_checkpoint_time('.train')
         # logs
         epoch_loss = 0
-        # AUC_metric = BinaryAUROC().to(DEVICE)
-        # AUC_metric_test = BinaryAUROC().to(DEVICE)
-        train_metric = select_metric('binary_AUC', device=DEVICE, num_class=2)
-        test_metric = select_metric('binary_AUC', device=DEVICE, num_class=2)
+        # available_metrics = ['binary_AUC', 'ACC', 'R2']
+        train_metric = select_metric('ACC', device=DEVICE)
+        test_metric = select_metric('ACC', device=DEVICE)
         
         torch.cuda.empty_cache()
         iter = 0
@@ -89,20 +95,22 @@ def train(model : nn.Module,
                 
             # for trainning, only the query node's output is used
             # caculate loss
-            LABEL_POOL_ = LABEL_POOL[query_indices] # shape:[q,2] ,example [[1. 0.], [1. 0.]]
-                        
+            LABEL_POOL_ = LABEL_POOL[query_indices] # shape:[B,L] ,example [[1. 0.], [1. 0.]]
             # caculate loss
-            batch_loss = criterion(outputs, torch.tensor(LABEL_POOL_,device=DEVICE))
+            batch_loss = criterion(outputs, torch.tensor(LABEL_POOL_,device=DEVICE,dtype=torch.float32))
             epoch_loss += batch_loss.item()
             # backpropagation
             batch_loss.backward()
             optimizer.step()
             print_checkpoint_time('loss 1')
             
-
-            TRUE = np.argmax(LABEL_POOL_,axis=1)
+            if get_task() == 'classification':
+                TRUE = np.argmax(LABEL_POOL_,axis=1)
+                preds = np.array(outputs.softmax(dim=1).detach().cpu()).tolist()
+            elif get_task() == 'regression':
+                TRUE = LABEL_POOL_
+                preds = np.array(outputs.detach().cpu()).tolist()
             
-            preds = np.array(outputs.softmax(dim=1).detach().cpu()).tolist()
             # the probability of the query node is 1 (from model output)
             train_metric.update(torch.tensor(preds,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
             # AUC_metric.update(torch.tensor(pred_prob_of_is_1,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
@@ -119,10 +127,10 @@ def train(model : nn.Module,
         epoch_AUC = float(train_metric.compute()) 
         train_metric.reset()
         if verbose == 1:
-            stepper_epoch.set_postfix({'loss_train':epoch_loss, 'AUC_train':epoch_AUC, 'AUC_test':epoch_AUC_test})
+            stepper_epoch.set_postfix({'loss_train':epoch_loss, train_metric.name+'_train':epoch_AUC, train_metric.name+'_test':epoch_AUC_test})
         
         '''------------------------evaluate------------------------'''
-        if (epoch+1) % evaluate_stride == 0:
+        if (epoch+1) % evaluate_stride == 0: # evaluate_stride
             # evaluate
             model.eval()
             iter = 0
@@ -145,10 +153,13 @@ def train(model : nn.Module,
                     outputs = model(datset, mode = 'inferring', query_indices = query_indices, K = None)
                     print_checkpoint_time('infering')
                     LABEL_POOL_ = TEST_LABEL_POOL[query_indices]
-                    TRUE = np.argmax(LABEL_POOL_,axis=1)
-                    # outputs = outputs.softmax(dim=1)
-                    # pred_prob_of_is_1 = [probs[1] for probs in outputs] 
-                    preds = np.array(outputs.softmax(dim=1).detach().cpu()).tolist()
+                    
+                    if get_task() == 'classification':
+                        TRUE = np.argmax(LABEL_POOL_,axis=1)
+                        preds = np.array(outputs.softmax(dim=1).detach().cpu()).tolist()
+                    elif get_task() == 'regression':
+                        TRUE = LABEL_POOL_
+                        preds = np.array(outputs.detach().cpu()).tolist()
                     
                     # AUC_metric_test.update(torch.tensor(pred_prob_of_is_1,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
                     test_metric.update(torch.tensor(preds,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
@@ -160,7 +171,7 @@ def train(model : nn.Module,
             epoch_AUC_test = float(test_metric.compute()) 
             # epoch_AUC_test = float(AUC_metric_test.compute()) 
             if verbose == 1:
-                stepper_epoch.set_postfix({'loss_train':epoch_loss, 'AUC_train':epoch_AUC, 'AUC_test':epoch_AUC_test})
+                stepper_epoch.set_postfix({'loss_train':epoch_loss, train_metric.name+'_train':epoch_AUC, train_metric.name+'_test':epoch_AUC_test})
 
             # AUC_metric.reset()
             test_metric.reset()
@@ -172,14 +183,14 @@ def train(model : nn.Module,
             
             # print(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | AUC: {epoch_AUC} |")
             if verbose >= 2:
-                print(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | AUC_train: {epoch_AUC} | AUC_test: {epoch_AUC_test}")
+                print(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_AUC} | {train_metric.name}_test: {epoch_AUC_test}")
         
         
         with open('logs/' + log_name + '.txt', 'a') as f:
             # f.write(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | AUC: {epoch_AUC}| ")
-            f.write(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | AUC_train: {epoch_AUC}| AUC_test: {epoch_AUC_test}\n ")
+            f.write(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_AUC}| {train_metric.name}_test: {epoch_AUC_test}\n ")
         if wandb_log:
-            wandb.log({'loss': epoch_loss, 'AUC_train': epoch_AUC, 'AUC_test': epoch_AUC_test, 'epoch': epoch})
+            wandb.log({'loss': epoch_loss, train_metric.name+'_train': epoch_AUC, train_metric.name+'_test': epoch_AUC_test, 'epoch': epoch})
     if verbose >=1:
-        print(f"{log_name} | Loss: {epoch_loss} | AUC_train: {epoch_AUC} | AUC_test: {epoch_AUC_test}")
+        print(f"{log_name} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_AUC} | {train_metric.name}_test: {epoch_AUC_test}")
 

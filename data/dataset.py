@@ -49,11 +49,14 @@ class HGNN_dataset():
         LABEL_POOL = TRAIN_POOL[LABEL_COLUMN]
         TEST_LABEL_POOL = TEST_POOL[LABEL_COLUMN]
         
+        
         from sklearn.preprocessing import OneHotEncoder
         enc = OneHotEncoder()
+        if get_task() == 'regression':
+            self.ORIGINAL_LABEL_POOL = LABEL_POOL.to_numpy().reshape(-1,1)
+            self.ORIGINAL_TEST_LABEL_POOL = TEST_LABEL_POOL.to_numpy().reshape(-1,1)
         LABEL_POOL = enc.fit_transform(LABEL_POOL.values.reshape(-1,1)).toarray()
         TEST_LABEL_POOL = enc.fit_transform(TEST_LABEL_POOL.values.reshape(-1,1)).toarray()
-
         # L: number of lable nodes, the last node of Lable nodes is served as unknown lable node
         L = LABEL_POOL.shape[1] + 1
 
@@ -157,7 +160,7 @@ class HGNN_dataset():
         
         # label to sample 
         tmp = torch.zeros([math.ceil(S/8) * 8, math.ceil(L/8) * 8], dtype=torch.float, device=DEVICE)
-        label_ids = self.TRAIN_POOL[self.LABEL_COLUMN].unique()
+        label_ids = sorted(self.TRAIN_POOL[self.LABEL_COLUMN].unique())
         for i, value_df in enumerate(self.TRAIN_POOL[self.LABEL_COLUMN]):
             for j, value_label in enumerate(label_ids):
                 if value_label == value_df:
@@ -205,9 +208,12 @@ class HGNN_dataset():
         C_pool_values = self.TEST_POOL.drop(self.LABEL_COLUMN, axis=1).values
 
         masks['L2S'] = self.MASKS_FULL['L2S'].clone().detach()
-        masks['L2S'][S-1, L-1] = 1
-        masks['L2S'] = masks['L2S'].repeat(len(indexs_in_test_pool),1,1)
-
+        # print(masks['L2S'].shape)
+        # print(masks['L2S'].sum())
+        masks['L2S'][S-1, :] = 1 # connect to all Label nodes
+        masks['L2S'] = masks['L2S'].repeat(len(indexs_in_test_pool),1,1) # repeat for batch
+        # print(indexs_in_test_pool)
+        # print(C_pool_values[indexs_in_test_pool[0]])
         def edit_S2C(index):
             masks['S2C'][index, C_pool_values[indexs_in_test_pool[index]],S-1] = 1  
         masks['S2C'] = self.MASKS_FULL['S2C'].clone().detach().repeat(len(indexs_in_test_pool),1,1)
