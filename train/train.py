@@ -30,6 +30,8 @@ def train(model : nn.Module,
             # verbose = 2: print loss and AUC per epoch
           wandb_log : bool = False,
             # inited outside
+          tensorboard_log : bool = False,
+          writer = None,
           log_name : str = 'unnamed',
           ):
     DEVICE = get_DEVICE()
@@ -192,6 +194,11 @@ def train(model : nn.Module,
             f.write(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_metric}| {train_metric.name}_test: {epoch_metric_test}\n ")
         if wandb_log:
             wandb.log({'loss': epoch_loss, train_metric.name+'_train': epoch_metric, train_metric.name+'_test': epoch_metric_test, 'epoch': epoch})
+        if tensorboard_log:
+            writer.add_scalar('loss', epoch_loss, epoch)
+            writer.add_scalar(train_metric.name+'_train', epoch_metric, epoch)
+            writer.add_scalar(train_metric.name+'_test', epoch_metric_test, epoch)
+            writer.flush()
     if verbose >=1:
         print(f"{log_name} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_metric} | {train_metric.name}_test: {epoch_metric_test}")
 

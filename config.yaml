@@ -22,4 +22,6 @@ wandb_config:
   name : v9.3 1000123
   group: v9.3 1000123
   notes: V10
-
+tensorboard_config:
+  use_tensorboard: True
+  name: test

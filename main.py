@@ -15,6 +15,7 @@ if __name__ == '__main__':
     # data_config
     run_config = config['run_config']
     wandb_config = config['wandb_config']
+    TSboard_config = config['tensorboard_config']
     
     # initalize setting
     set_DEVICE(run_config['device'])
@@ -51,7 +52,10 @@ if __name__ == '__main__':
                 # track hyperparameters and run metadata
                 config = dict(run_config, **wandb_config)
             )
-
+        writer = None
+        if TSboard_config['use_tensorboard']:
+            from torch.utils.tensorboard import SummaryWriter
+            writer = SummaryWriter(comment=TSboard_config['name'])
 
         Main_data = HGNN_dataset( train_pool, 
                                 label_column = get_label_colunm(), 
@@ -75,8 +79,13 @@ if __name__ == '__main__':
             evaluate_stride = run_config['evaluate_stride'],
             verbose = 2,
             log_name = wandb_config['name'],
-            wandb_log = wandb_config['use_wandb'],)
+            wandb_log = wandb_config['use_wandb'],
+            tensorboard_log= TSboard_config['use_tensorboard'],
+            writer = writer,
+            )
         del Main_data, model
         
         if wandb_config['use_wandb']:
             wandb.finish()
+        if TSboard_config['use_tensorboard']:
+            writer.close()
