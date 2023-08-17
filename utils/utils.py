@@ -12,6 +12,10 @@ DATA_CONFIG = {}
 dataset = 'None'
 with open('./data/RAW_data/data_configs.yml', 'r') as stream:
     DATA_CONFIG = yaml.load(stream, Loader=yaml.Loader)
+    if DATA_CONFIG[dataset]['NUM'] == None:
+        DATA_CONFIG[dataset]['NUM'] = []
+    if DATA_CONFIG[dataset]['CAT'] == None:
+        DATA_CONFIG[dataset]['CAT'] = []
 def get_DATA_CONFIG():
     return DATA_CONFIG
 

@@ -7,14 +7,11 @@ import random
 import pandas as pd
 from tqdm import tqdm, trange
 from model.model import TransformerDecoderModel
+from model.metric import *
 from utils.utils import *
 import wandb
 
-# training
-from torch import autograd
-from torcheval.metrics.aggregation.auc import AUC
-from torcheval.metrics import BinaryAUROC
-from sklearn.metrics import roc_auc_score
+
 tmp_log = []
 tmp__log = []
 def train(model : nn.Module, 
@@ -60,8 +57,10 @@ def train(model : nn.Module,
         print_checkpoint_time('.train')
         # logs
         epoch_loss = 0
-        AUC_metric = BinaryAUROC().to(DEVICE)
-        AUC_metric_test = BinaryAUROC().to(DEVICE)
+        # AUC_metric = BinaryAUROC().to(DEVICE)
+        # AUC_metric_test = BinaryAUROC().to(DEVICE)
+        train_metric = select_metric('binary_AUC', device=DEVICE, num_class=2)
+        test_metric = select_metric('binary_AUC', device=DEVICE, num_class=2)
         
         torch.cuda.empty_cache()
         iter = 0
@@ -103,24 +102,22 @@ def train(model : nn.Module,
 
             TRUE = np.argmax(LABEL_POOL_,axis=1)
             
-            outputs = outputs.softmax(dim=1).detach().cpu()
-            # pred_prob_of_is_1 = [probs[1] for probs in outputs] 
-            pred_prob_of_is_1 = np.array(outputs)[:,1].tolist()
+            preds = np.array(outputs.softmax(dim=1).detach().cpu()).tolist()
             # the probability of the query node is 1 (from model output)
-            
-            AUC_metric.update(torch.tensor(pred_prob_of_is_1,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
+            train_metric.update(torch.tensor(preds,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
+            # AUC_metric.update(torch.tensor(pred_prob_of_is_1,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
             iter += 1
             # if iter >= 100:
             #     break
             print_checkpoint_time('loss 2')
             if index == len(datset.FEATURE_POOL)//batch_size -1 and verbose >= 2:
-                stepper.set_postfix(AUC=float(AUC_metric.compute()))
+                stepper.set_postfix({train_metric.name :float(train_metric.compute())})
                 stepper.update()
                 
         torch.cuda.empty_cache()
         epoch_loss = epoch_loss / batch_size
-        epoch_AUC = float(AUC_metric.compute()) 
-        AUC_metric.reset()
+        epoch_AUC = float(train_metric.compute()) 
+        train_metric.reset()
         if verbose == 1:
             stepper_epoch.set_postfix({'loss_train':epoch_loss, 'AUC_train':epoch_AUC, 'AUC_test':epoch_AUC_test})
         
@@ -149,22 +146,26 @@ def train(model : nn.Module,
                     print_checkpoint_time('infering')
                     LABEL_POOL_ = TEST_LABEL_POOL[query_indices]
                     TRUE = np.argmax(LABEL_POOL_,axis=1)
-                    outputs = outputs.softmax(dim=1)
-                    pred_prob_of_is_1 = [probs[1] for probs in outputs] 
-                    AUC_metric_test.update(torch.tensor(pred_prob_of_is_1,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
+                    # outputs = outputs.softmax(dim=1)
+                    # pred_prob_of_is_1 = [probs[1] for probs in outputs] 
+                    preds = np.array(outputs.softmax(dim=1).detach().cpu()).tolist()
+                    
+                    # AUC_metric_test.update(torch.tensor(pred_prob_of_is_1,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
+                    test_metric.update(torch.tensor(preds,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
                     print_checkpoint_time('loss')
                     iter += 1
                     # if iter >= 3:
                     #     break
             torch.cuda.empty_cache()
-            epoch_AUC_test = float(AUC_metric_test.compute()) 
+            epoch_AUC_test = float(test_metric.compute()) 
+            # epoch_AUC_test = float(AUC_metric_test.compute()) 
             if verbose == 1:
                 stepper_epoch.set_postfix({'loss_train':epoch_loss, 'AUC_train':epoch_AUC, 'AUC_test':epoch_AUC_test})
 
-            AUC_metric.reset()
-            AUC_metric_test.reset()
+            # AUC_metric.reset()
+            test_metric.reset()
             # break
-            del AUC_metric_test, AUC_metric
+            # del AUC_metric_test, AUC_metric
             tmp_log.append(float(epoch_loss))
             tmp__log.append(float(epoch_AUC))
 
