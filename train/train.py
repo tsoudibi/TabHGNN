@@ -40,14 +40,15 @@ def train(model : nn.Module,
         LABEL_POOL = datset.ORIGINAL_LABEL_POOL
         TEST_LABEL_POOL = datset.ORIGINAL_TEST_LABEL_POOL
     if get_task() == 'classification':
-        weight = torch.from_numpy(np.array([0.2, 1])).float().to(DEVICE)
-        criterion = nn.CrossEntropyLoss(weight)
+        # weight = torch.from_numpy(np.array([0.2, 1])).float().to(DEVICE)
+        # criterion = nn.CrossEntropyLoss(weight)
+        criterion = nn.CrossEntropyLoss()
     elif get_task() == 'regression':
         criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
     
-    epoch_AUC = 0
-    epoch_AUC_test = 0
+    epoch_metric = 0
+    epoch_metric_test = 0
     
     if verbose == 1:
         stepper_epoch = trange(epochs)
@@ -124,10 +125,10 @@ def train(model : nn.Module,
                 
         torch.cuda.empty_cache()
         epoch_loss = epoch_loss / batch_size
-        epoch_AUC = float(train_metric.compute()) 
+        epoch_metric = float(train_metric.compute()) 
         train_metric.reset()
         if verbose == 1:
-            stepper_epoch.set_postfix({'loss_train':epoch_loss, train_metric.name+'_train':epoch_AUC, train_metric.name+'_test':epoch_AUC_test})
+            stepper_epoch.set_postfix({'loss_train':epoch_loss, train_metric.name+'_train':epoch_metric, train_metric.name+'_test':epoch_metric_test})
         
         '''------------------------evaluate------------------------'''
         if (epoch+1) % evaluate_stride == 0: # evaluate_stride
@@ -168,29 +169,29 @@ def train(model : nn.Module,
                     # if iter >= 3:
                     #     break
             torch.cuda.empty_cache()
-            epoch_AUC_test = float(test_metric.compute()) 
-            # epoch_AUC_test = float(AUC_metric_test.compute()) 
+            epoch_metric_test = float(test_metric.compute()) 
+            # epoch_metric_test = float(AUC_metric_test.compute()) 
             if verbose == 1:
-                stepper_epoch.set_postfix({'loss_train':epoch_loss, train_metric.name+'_train':epoch_AUC, train_metric.name+'_test':epoch_AUC_test})
+                stepper_epoch.set_postfix({'loss_train':epoch_loss, train_metric.name+'_train':epoch_metric, train_metric.name+'_test':epoch_metric_test})
 
             # AUC_metric.reset()
             test_metric.reset()
             # break
             # del AUC_metric_test, AUC_metric
             tmp_log.append(float(epoch_loss))
-            tmp__log.append(float(epoch_AUC))
+            tmp__log.append(float(epoch_metric))
 
             
-            # print(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | AUC: {epoch_AUC} |")
+            # print(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | AUC: {epoch_metric} |")
             if verbose >= 2:
-                print(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_AUC} | {train_metric.name}_test: {epoch_AUC_test}")
+                print(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_metric} | {train_metric.name}_test: {epoch_metric_test}")
         
         
         with open('logs/' + log_name + '.txt', 'a') as f:
-            # f.write(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | AUC: {epoch_AUC}| ")
-            f.write(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_AUC}| {train_metric.name}_test: {epoch_AUC_test}\n ")
+            # f.write(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | AUC: {epoch_metric}| ")
+            f.write(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_metric}| {train_metric.name}_test: {epoch_metric_test}\n ")
         if wandb_log:
-            wandb.log({'loss': epoch_loss, train_metric.name+'_train': epoch_AUC, train_metric.name+'_test': epoch_AUC_test, 'epoch': epoch})
+            wandb.log({'loss': epoch_loss, train_metric.name+'_train': epoch_metric, train_metric.name+'_test': epoch_metric_test, 'epoch': epoch})
     if verbose >=1:
-        print(f"{log_name} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_AUC} | {train_metric.name}_test: {epoch_AUC_test}")
+        print(f"{log_name} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_metric} | {train_metric.name}_test: {epoch_metric_test}")
 
