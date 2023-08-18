@@ -1,6 +1,6 @@
 from data.dataset import *
 from data.preprocess import *
-
+from train.logger import *
 from model.model import *
 from train.train import *
 from utils.utils import *
@@ -10,12 +10,14 @@ from sklearn.model_selection import KFold
 import wandb
 import os
 if __name__ == '__main__': 
+    config = None
     with open('config.yaml', 'r') as stream:
         config = yaml.load(stream, Loader=yaml.Loader)
     # data_config
     run_config = config['run_config']
     wandb_config = config['wandb_config']
     TSboard_config = config['tensorboard_config']
+    logger_config = config['logger_config']
     
     # initalize setting
     set_DEVICE(run_config['device'])
@@ -58,6 +60,10 @@ if __name__ == '__main__':
             from torch.utils.tensorboard import SummaryWriter
             writer = SummaryWriter(comment=TSboard_config['name'])
 
+        logger = None
+        if logger_config['use_logger']:
+            logger = Logger(config)
+            
         Main_data = HGNN_dataset( train_pool, 
                                 label_column = get_label_colunm(), 
                                 test_df = test_pool, 
@@ -70,6 +76,7 @@ if __name__ == '__main__':
                                         run_config['propagation_steps']
                                         ).to(DEVICE)
         train(model, Main_data,
+            metric = run_config['metric'],
             epochs= run_config['max_epoch'],
             lr = run_config['learning_rate'],
             batch_size = run_config['batch_size'],
@@ -83,6 +90,7 @@ if __name__ == '__main__':
             wandb_log = wandb_config['use_wandb'],
             tensorboard_log= TSboard_config['use_tensorboard'],
             writer = writer,
+            logger= logger,
             )
         del Main_data, model
         

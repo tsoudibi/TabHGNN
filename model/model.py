@@ -238,10 +238,12 @@ class TransformerDecoderModel(nn.Module):
             # print(dataset.TEST_POOL.columns)
             NUM, _, _ = get_feilds_attributes()
             numerical_unseen_indexes = [dataset.unseen_node_indexs_C[filed] for filed in NUM]
-            test_data_pool = dataset.TEST_POOL.drop(columns=[get_target()])
+            # test_data_pool = dataset.TEST_POOL.drop(columns=[get_target()])TEST_POOL_VALUES
+            test_data_pool = dataset.TEST_POOL_VALUES.drop(columns=[get_target()])
             C_input[:,numerical_unseen_indexes] = torch.tensor((test_data_pool.iloc[query_indices][NUM]).to_numpy(),dtype=torch.double,device=get_DEVICE()).unsqueeze(-1)
             # C_input[:,list(dataset.unseen_node_indexs_C.values())] = torch.tensor((dataset.TEST_POOL.drop(columns=[get_target()]).iloc[query_indices]).to_numpy(),dtype=torch.double,device=get_DEVICE()).unsqueeze(-1)
-            
+            # print(test_data_pool)
+            # print((test_data_pool.iloc[0][NUM]).to_numpy())
             self.maskout_lable(dataset, query_indices, None)
             
             

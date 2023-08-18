@@ -1,12 +1,15 @@
 run_config:
+  log_name: test
   print_time: False
   device: cuda
   dataset: eye_movements_num
-  max_epoch: 1000
+  metric: binary_AUC
+  # 'binary_AUC', 'ACC'
+  max_epoch: 5
   learning_rate: 0.001
   batch_size: 128
   batch_size_test: 12
-  K: 1000
+  K: 100
   num_layers: 1
   embedding_dim: 128
   propagation_steps: 1
@@ -18,10 +21,14 @@ run_config:
 wandb_config:
   use_wandb: False
   entity: tabhyperformer
-  project: K_fold test 0727 
-  name : v9.3 1000123
-  group: v9.3 1000123
-  notes: V10
+  project: new test
+  name : V10.9 compas K1000 N100
+  group: V10.9 change infer C_input
+  notes: V10.9
 tensorboard_config:
-  use_tensorboard: True
+  use_tensorboard: False
   name: test
+logger_config:
+  use_logger: True
+  dump_log: True
+  plot_log: True

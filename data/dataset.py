@@ -41,7 +41,7 @@ class HGNN_dataset():
         # train
         #   
         TRAIN_POOL, self.inference_package, self.NUM_vs_CAT, C_POOL = POOL_preprocess(train_pool, N_BINS = N_BINS)
-        TEST_POOL, self.unseen_node_indexs_C = POOL_preprocess_inference(test_pool, self.inference_package)
+        TEST_POOL, self.unseen_node_indexs_C, self.TEST_POOL_VALUES = POOL_preprocess_inference(test_pool, self.inference_package)
         LABEL_COLUMN = label_column
 
         # cut feature and lable
@@ -71,7 +71,6 @@ class HGNN_dataset():
         for column in FEATURE_POOL.columns:
             self.nodes_of_fields.append(FEATURE_POOL[column].nunique()+1)
         C = sum(self.nodes_of_fields) # the total number of nodes equals to the sum of nodes of each field
-        # C_POOL = range(int(C))
 
         nodes_num = {'L':L, 'S':S, 'C':C, 'F':F}
         print('node_nums', nodes_num)
@@ -205,7 +204,7 @@ class HGNN_dataset():
         masks = {}
 
         # for i query nodes
-        C_pool_values = self.TEST_POOL.drop(self.LABEL_COLUMN, axis=1).values
+        C_connection = self.TEST_POOL.drop(self.LABEL_COLUMN, axis=1).values
 
         masks['L2S'] = self.MASKS_FULL['L2S'].clone().detach()
         # print(masks['L2S'].shape)
@@ -214,11 +213,12 @@ class HGNN_dataset():
         masks['L2S'] = masks['L2S'].repeat(len(indexs_in_test_pool),1,1) # repeat for batch
         # print(indexs_in_test_pool)
         # print(C_pool_values[indexs_in_test_pool[0]])
+        
         def edit_S2C(index):
-            masks['S2C'][index, C_pool_values[indexs_in_test_pool[index]],S-1] = 1  
+            masks['S2C'][index, C_connection[indexs_in_test_pool[index]],S-1] = 1  
         masks['S2C'] = self.MASKS_FULL['S2C'].clone().detach().repeat(len(indexs_in_test_pool),1,1)
         _ = list(map(edit_S2C, range(len(indexs_in_test_pool))))
-        
+        # print(masks['S2C'][0,:,S-1])
         # C2F remains the same
         masks['C2F'] = self.MASKS_FULL['C2F'].repeat(len(indexs_in_test_pool),1,1)
         

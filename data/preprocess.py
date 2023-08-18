@@ -65,9 +65,9 @@ def POOL_preprocess(df, N_BINS = 100):
         if column == TARGET:# if the column is the label column, skip it(do not add it to C_pool)
             continue
         values = X_trans[column].to_numpy().reshape(-1,1)
-        values = ct.named_transformers_[column].inverse_transform(values)
+        # values = ct.named_transformers_[column].inverse_transform(values)
         values = (np.unique(values).flatten())
-        values = np.arange(len(values))
+        # values = np.arange(len(values))
         # values = values / max(values)
         # min max scaling
         # values = (values - values.min()) / (values.max() - values.min())
@@ -79,7 +79,7 @@ def POOL_preprocess(df, N_BINS = 100):
             continue
         catagory_count += len(X_trans[column].unique()) + 1
     C_pool = np.concatenate((C_pool, np.arange(catagory_count)))
-
+    print('train',C_pool)
     # store the numrical columns' existing values for identifying unseen values
     existing_values = {}
     for column in NUM:
@@ -110,7 +110,6 @@ def POOL_preprocess(df, N_BINS = 100):
     # print(check_DataFrame_distribution(X_trans))
     return X_trans, (ct, OE_list, NUM, CAT, existing_values), NUM_vs_CAT, C_pool
     # -1 is for the label column 
-    
 
 def POOL_preprocess_inference(df: pd.DataFrame,
                               inference_package: tuple,
@@ -134,6 +133,10 @@ def POOL_preprocess_inference(df: pd.DataFrame,
     (ct, OE_list, NUM, CAT, existing_values) = inference_package
     X_trans_ori = ct.transform(df)
     X_trans_ori = reorder_dataframe(X_trans_ori)
+    
+    import copy
+    TEST_POOL_VALUES = copy.copy(X_trans_ori)
+    # print(TEST_POOL_VALUES)
     
     # caculate the loaction of unseen values
     unseen_node_indexs = {}
@@ -167,4 +170,4 @@ def POOL_preprocess_inference(df: pd.DataFrame,
     
     X_trans = X_trans.astype(int).reset_index(drop = True) 
     # check_DataFrame_distribution(X_trans)
-    return X_trans, unseen_node_indexs 
+    return X_trans, unseen_node_indexs, TEST_POOL_VALUES

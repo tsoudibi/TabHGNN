@@ -16,6 +16,7 @@ tmp_log = []
 tmp__log = []
 def train(model : nn.Module, 
           datset : HGNN_dataset, 
+          metric : str,
           epochs : int = 20,
           batch_size : int = 8,
           batch_size_test : int = 2,
@@ -32,6 +33,7 @@ def train(model : nn.Module,
             # inited outside
           tensorboard_log : bool = False,
           writer = None,
+          logger = None,
           log_name : str = 'unnamed',
           ):
     DEVICE = get_DEVICE()
@@ -68,8 +70,8 @@ def train(model : nn.Module,
         # logs
         epoch_loss = 0
         # available_metrics = ['binary_AUC', 'ACC', 'R2']
-        train_metric = select_metric('ACC', device=DEVICE)
-        test_metric = select_metric('ACC', device=DEVICE)
+        train_metric = select_metric(metric, device=DEVICE)
+        test_metric = select_metric(metric, device=DEVICE)
         
         torch.cuda.empty_cache()
         iter = 0
@@ -194,9 +196,9 @@ def train(model : nn.Module,
                 print(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_metric} | {train_metric.name}_test: {epoch_metric_test}")
         
         
-        with open('logs/' + log_name + '.txt', 'a') as f:
-            # f.write(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | AUC: {epoch_metric}| ")
-            f.write(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_metric}| {train_metric.name}_test: {epoch_metric_test}\n ")
+        # with open('logs/' + log_name + '.txt', 'a') as f:
+        #     # f.write(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | AUC: {epoch_metric}| ")
+        #     f.write(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_metric}| {train_metric.name}_test: {epoch_metric_test}\n ")
         if wandb_log:
             wandb.log({'loss': epoch_loss, train_metric.name+'_train': epoch_metric, train_metric.name+'_test': epoch_metric_test, 'epoch': epoch})
         if tensorboard_log:
@@ -204,6 +206,15 @@ def train(model : nn.Module,
             writer.add_scalar(train_metric.name+'_train', epoch_metric, epoch)
             writer.add_scalar(train_metric.name+'_test', epoch_metric_test, epoch)
             writer.flush()
+        if logger is not None:
+            logger.update(epoch, epoch_loss, epoch_metric, epoch_metric_test)
+            logger.save()
+            
+    if logger is not None:
+        logger.plot_metric()
+        logger.plot_loss()
+        best_loss, best_train_metric, best_test_metric, best_epoch = logger.get_best()
+        print(f"best_loss: {best_loss} | best_{train_metric.name}_train: {best_train_metric} | best_{train_metric.name}_test: {best_test_metric} | best_epoch: {best_epoch}")
     if verbose >=1:
         print(f"{log_name} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_metric} | {train_metric.name}_test: {epoch_metric_test}")
 
