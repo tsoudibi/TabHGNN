@@ -5,7 +5,7 @@ run_config:
   dataset: eye_movements_num
   metric: binary_AUC
   # 'binary_AUC', 'ACC'
-  max_epoch: 5
+  max_epoch: 50
   learning_rate: 0.001
   batch_size: 128
   batch_size_test: 12
