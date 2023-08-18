@@ -30,6 +30,7 @@ if __name__ == '__main__':
     # select dataset 
     main_df = pd.read_csv(select_dataset(run_config['dataset']))
     main_df = randomize_df(main_df)
+    main_df = reorder_dataframe(main_df)
 
     if get_task() == 'regression':
         raise NotImplementedError('regression task is not propery supported yet')

@@ -79,11 +79,19 @@ def randomize_df(df):
     
 def check_DataFrame_distribution(X_trans):
     columns_range = {}
-    print('%15s' % '', '%6s' % 'min','%6s' % 'max', '%6s' % 'nunique')
+    print('%15s' % '', '%6s' % 'min','%6s' % 'max', '%6s' % 'nunique' )
     
     for column in X_trans.columns:
         print('%15s' % column, '%6s' % X_trans[column].min(),'%6s' % X_trans[column].max(), '%6s' % X_trans[column].nunique())
         columns_range[column] = {}
+        
+def reorder_dataframe(df):
+    features = (DATA_CONFIG[dataset]['NUM'] + DATA_CONFIG[dataset]['CAT'])
+    features.remove(DATA_CONFIG[dataset]['TARGET'])
+    columns = features + [DATA_CONFIG[dataset]['TARGET']]
+    df = df[columns]
+    print('in order', df.columns)
+    return df
 
 T = time.time()
 PRINT_TIME = True

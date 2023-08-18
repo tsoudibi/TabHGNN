@@ -228,11 +228,19 @@ class TransformerDecoderModel(nn.Module):
             L_input, S_input, C_input, F_input = dataset.INPUTS
             L_input = L_input.repeat(batch_size,1,1)
             S_input = S_input.repeat(batch_size,1,1)
-            C_input = C_input.repeat(batch_size,1,1)
+            C_input = C_input.repeat(batch_size,1,1) # (batch, C node, 1)
             F_input = F_input.repeat(batch_size,1,1)
             # updata mask for inference node
             dataset.make_mask_test(query_indices) # query node equal to inference node, only one query node is allowed
             masks = dataset.MASKS
+            # modify C_input, make unseen catagory nodes' value equal to sample's value
+            # print(dataset.TEST_POOL.iloc[0])
+            # print(dataset.TEST_POOL.columns)
+            NUM, _, _ = get_feilds_attributes()
+            numerical_unseen_indexes = [dataset.unseen_node_indexs_C[filed] for filed in NUM]
+            test_data_pool = dataset.TEST_POOL.drop(columns=[get_target()])
+            C_input[:,numerical_unseen_indexes] = torch.tensor((test_data_pool.iloc[query_indices][NUM]).to_numpy(),dtype=torch.double,device=get_DEVICE()).unsqueeze(-1)
+            # C_input[:,list(dataset.unseen_node_indexs_C.values())] = torch.tensor((dataset.TEST_POOL.drop(columns=[get_target()]).iloc[query_indices]).to_numpy(),dtype=torch.double,device=get_DEVICE()).unsqueeze(-1)
             
             self.maskout_lable(dataset, query_indices, None)
             
@@ -275,11 +283,15 @@ class TransformerDecoderModel(nn.Module):
         
         C_embedded_num = ((C_inputs.unsqueeze(-1) * weights.unsqueeze(0)).sum(-1) + biases.unsqueeze(0))
         
-        
+        # print(field)
+        # print(num_CAT)
+        # print(sum(field[-num_CAT:]))
+        # print(C_input.shape)
+        # print(C_input[:,-1*sum(field[-num_CAT:]):].squeeze(2).long().shape)
         if num_CAT > 0:
             catagorical_filed_nodes = sum(field[-num_CAT:]) # pick catagory fields
             C_embedded_cat = self.Catagory_embedding_cat(C_input[:,-catagorical_filed_nodes:].squeeze(2).long()).float() 
-            # print(C_embedded_num.shape, C_embedded_cat.shape)
+            # print( C_embedded_cat.shape)
             C_embedded = torch.cat([C_embedded_num, C_embedded_cat], dim = 1)
         else:
             C_embedded = C_embedded_num

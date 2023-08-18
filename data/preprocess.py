@@ -1,4 +1,4 @@
-from sklearn.compose import ColumnTransformer
+from sklearn.compose import ColumnTransformer, make_column_selector
 from sklearn.preprocessing import KBinsDiscretizer
 import numpy as np
 import pandas as pd
@@ -39,7 +39,7 @@ def POOL_preprocess(df, N_BINS = 100):
     pipe_uniform = KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='uniform', subsample=None)
     pipe_quantile = KBinsDiscretizer(n_bins = N_BINS, encode='ordinal', strategy='quantile', subsample=None)
     
-    ColumnTransformers_list = []
+    ColumnTransformers_list = [('pass', 'passthrough', make_column_selector(dtype_include=object))]
     # print(uniform, quantile)
     # print(not isinstance(uniform, list), not isinstance(quantile, list))
     if not isinstance(uniform, list) and not isinstance(quantile, list):
@@ -56,7 +56,8 @@ def POOL_preprocess(df, N_BINS = 100):
          ,remainder = 'passthrough', verbose_feature_names_out = False) # make sure columns are unique
     
     ct.set_output(transform = 'pandas')
-    X_trans = ct.fit_transform(df) 
+    X_trans = ct.fit_transform(df)
+    X_trans = reorder_dataframe(X_trans)
     # print(X_trans[NUM])
     C_pool = np.array([])
 
@@ -132,6 +133,7 @@ def POOL_preprocess_inference(df: pd.DataFrame,
     '''
     (ct, OE_list, NUM, CAT, existing_values) = inference_package
     X_trans_ori = ct.transform(df)
+    X_trans_ori = reorder_dataframe(X_trans_ori)
     
     # caculate the loaction of unseen values
     unseen_node_indexs = {}
