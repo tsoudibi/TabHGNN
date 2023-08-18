@@ -6,13 +6,13 @@ run_config:
   learning_rate: 0.001
   batch_size: 128
   batch_size_test: 12
-  K: 100
+  K: 1000
   num_layers: 1
   embedding_dim: 128
   propagation_steps: 1
   unseen_rate: 0
   aug_strategy: "random"
-  N_BINS: 3
+  N_BINS: 100
   random_state: 42
   evaluate_stride: 1
 wandb_config:
