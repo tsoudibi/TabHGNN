@@ -21,10 +21,10 @@ run_config:
 wandb_config:
   use_wandb: False
   entity: tabhyperformer
-  project: new test
-  name : V10.9 compas K1000 N100
-  group: V10.9 change infer C_input
-  notes: V10.9
+  project: overall
+  name : run
+  group: run 
+  notes: V11
 tensorboard_config:
   use_tensorboard: False
   name: test

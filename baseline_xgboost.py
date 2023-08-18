@@ -38,7 +38,7 @@ if __name__ == '__main__':
     for index, (train_index, test_index) in enumerate(kf.split(main_df)):
         X_train, X_test = main_df.loc[train_index], main_df.loc[test_index]
         X_train, inference_package,_,_ = POOL_preprocess(X_train, N_BINS = 100)
-        X_test, _ = POOL_preprocess_inference(X_test, inference_package)
+        X_test, _, _ = POOL_preprocess_inference(X_test, inference_package)
         # print(X_train)
         Y_train, Y_test = X_train[TARGET] - X_train[TARGET].min(), X_test[TARGET] - X_test[TARGET].min()
         X_train, X_test = X_train.drop(columns=TARGET), X_test.drop(columns=TARGET)

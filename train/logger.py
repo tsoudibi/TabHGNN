@@ -1,12 +1,15 @@
 class Logger():
     def __init__(self,
                  config,
+                 name = None
                  ):
-        from datetime import datetime
-        now = datetime.now().strftime("%m_%d-%H_%M")
-        print('log name is ', config['run_config']['log_name']+'_'+config['run_config']['dataset'] + '_' + now)
-        self.name = config['run_config']['log_name']+'_'+config['run_config']['dataset'] + '_' + now
-        
+        if name == None:
+            from datetime import datetime
+            now = datetime.now().strftime("%m_%d-%H_%M")
+            print('log name is ', config['run_config']['log_name']+'_'+config['run_config']['dataset'] + '_' + now)
+            self.name = config['run_config']['log_name']+'_'+config['run_config']['dataset'] + '_' + now
+        else:
+            self.name = name
         self.LOG = {}
         self.LOG['name'] = self.name
         self.LOG['used_metric'] = config['run_config']['metric']

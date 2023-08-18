@@ -46,8 +46,8 @@ if __name__ == '__main__':
             if get_task() == 'regression':
                 raise NotImplementedError('regression task is not propery supported yet')
             for index, (train_index, test_index) in enumerate(kf.split(main_df)):
-                if index !=0:
-                    continue
+                # if index !=0:
+                #     continue
                 print('-----------------[', index+1, 'fold] processing...-----------------')
                 train_pool, test_pool = main_df.iloc[train_index], main_df.iloc[test_index]
 
@@ -71,7 +71,8 @@ if __name__ == '__main__':
 
                 logger = None
                 if logger_config['use_logger']:
-                    logger = Logger(config)
+                    name = run_config['dataset'] + '_' + run_config['metric'] + '_' + str(index)
+                    logger = Logger(config,name)
                     
                 Main_data = HGNN_dataset( train_pool, 
                                         label_column = get_label_colunm(), 
