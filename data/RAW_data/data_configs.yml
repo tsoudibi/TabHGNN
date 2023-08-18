@@ -22,8 +22,8 @@ adult:
     - hours-per-week
   TARGET: 
     income
-  quntile:
   uniform:
+  quntile:
     - fnlwgt
     - educational-num
     - age
@@ -52,8 +52,8 @@ compas:
     - priors_count
   TARGET:
     twoyearrecid
-  quntile:
   uniform:
+  quntile:
     - age
     - juv_misd_count
     - priors_count
@@ -89,8 +89,8 @@ eye_movements_num:
     - wordNo
   TARGET:
     label
-  quntile:
   uniform:
+  quntile:
     - lineNo
     - assgNo
     - prevFixDur
@@ -145,8 +145,8 @@ eye_movements_cat:
     - wordNo
   TARGET:
     label
-  quntile:
   uniform:
+  quntile:
     - lineNo
     - assgNo
     - prevFixDur
@@ -185,8 +185,8 @@ electricity_num:
     - transfer
   TARGET:
     class
-  quntile:
   uniform:
+  quntile:
     - date
     - period
     - nswprice
@@ -216,8 +216,8 @@ houses_cat:
     - total_(BRL)
   TARGET:
     total_(BRL)
-  quntile:
   uniform:
+  quntile:
     - area
     - rooms
     - bathroom
@@ -292,6 +292,7 @@ covertype_cat:
   TARGET:
     class
   uniform:
+  quntile:
     - Elevation
     - Aspect
     - Slope
@@ -302,4 +303,3 @@ covertype_cat:
     - Hillshade_Noon
     - Hillshade_3pm
     - Horizontal_Distance_To_Fire_Points
-  quntile:

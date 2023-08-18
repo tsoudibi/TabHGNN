@@ -100,8 +100,8 @@ def POOL_preprocess(df, N_BINS = 100):
     # each column has it's own number of unique values. '+1' is for unseen values
     offset = 0
     for column in NUM + CAT:
-        if column == TARGET: # if the column is the label column, skip it(do not add it to C_pool)
-            continue
+        # if column == TARGET: # if the column is the label column, skip it(do not add it to C_pool)
+        #     continue
         X_trans[column] = X_trans[column].apply(lambda x: x + offset)
         offset += (X_trans[column].max() - X_trans[column].min() + 1) + 1
     

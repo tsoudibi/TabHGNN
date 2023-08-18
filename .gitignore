@@ -2,3 +2,4 @@ wandb/
 logs/
 *.pyc
 runs/
+test.ipynb
