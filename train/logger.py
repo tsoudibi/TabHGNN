@@ -77,7 +77,6 @@ class Logger():
         plt.savefig(path)
         
     def plot_loss(self):
-        del plt
         import matplotlib.pyplot as plt
         plt.plot(self.LOG['loss'], label = 'loss')
         plt.title(self.LOG['name'])

@@ -20,8 +20,10 @@ if __name__ == '__main__':
     logger_config = config['logger_config']
     
     '''================alternation================'''
-    dataset_list = ['adult','compas','eye_movements_num','eye_movements_cat']
-    metric_list = ['binary_AUC', 'ACC']
+    dataset_list = ['adult']
+    # dataset_list = ['compas','eye_movements_num','eye_movements_cat']
+    metric_list = [ 'ACC']
+    # metric_list = ['binary_AUC', 'ACC']
     
     for the_dataset in dataset_list:
         for the_metric in metric_list:
@@ -46,8 +48,8 @@ if __name__ == '__main__':
             if get_task() == 'regression':
                 raise NotImplementedError('regression task is not propery supported yet')
             for index, (train_index, test_index) in enumerate(kf.split(main_df)):
-                # if index !=0:
-                #     continue
+                if index < 3:
+                    continue
                 print('-----------------[', index+1, 'fold] processing...-----------------')
                 train_pool, test_pool = main_df.iloc[train_index], main_df.iloc[test_index]
 

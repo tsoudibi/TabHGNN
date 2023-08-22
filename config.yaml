@@ -2,7 +2,7 @@ run_config:
   log_name: test
   print_time: False
   device: cuda
-  dataset: eye_movements_num
+  dataset: adult
   metric: binary_AUC
   # 'binary_AUC', 'ACC'
   max_epoch: 200
@@ -19,7 +19,7 @@ run_config:
   random_state: 42
   evaluate_stride: 1
 wandb_config:
-  use_wandb: False
+  use_wandb: True
   entity: tabhyperformer
   project: overall
   name : run
