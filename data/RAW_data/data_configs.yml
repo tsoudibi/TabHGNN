@@ -367,3 +367,35 @@ electricity_cat:
     - vicprice
     - vicdemand
     - transfer
+credit:
+  full_name: credit
+  file_path: data/RAW_data/credit.csv
+  task: classification
+  num_classes: 2
+  CAT:
+    - SeriousDlqin2yrs
+  NUM:
+    - RevolvingUtilizationOfUnsecuredLines
+    - age
+    - NumberOfTime30-59DaysPastDueNotWorse
+    - DebtRatio
+    - MonthlyIncome
+    - NumberOfOpenCreditLinesAndLoans
+    - NumberOfTimes90DaysLate
+    - NumberRealEstateLoansOrLines
+    - NumberOfTime60-89DaysPastDueNotWorse
+    - NumberOfDependents
+  TARGET:
+    SeriousDlqin2yrs
+  uniform:
+  quntile:
+    - RevolvingUtilizationOfUnsecuredLines
+    - age
+    - NumberOfTime30-59DaysPastDueNotWorse
+    - DebtRatio
+    - MonthlyIncome
+    - NumberOfOpenCreditLinesAndLoans
+    - NumberOfTimes90DaysLate
+    - NumberRealEstateLoansOrLines
+    - NumberOfTime60-89DaysPastDueNotWorse
+    - NumberOfDependents
