@@ -2,8 +2,8 @@ run_config:
   log_name: test
   print_time: False
   device: cuda
-  dataset: adult
-  metric: binary_AUC
+  dataset: compass_old
+  metric: ACC
   # 'binary_AUC', 'ACC'
   max_epoch: 200
   learning_rate: 0.001

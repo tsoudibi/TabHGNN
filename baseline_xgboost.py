@@ -22,13 +22,15 @@ if __name__ == '__main__':
     DEVICE = get_DEVICE()
     set_seed(run_config['random_state'])
     set_PRINT_TIME(run_config['print_time'])
-    select_dataset(run_config['dataset'])
     os.environ["WANDB_SILENT"] = "true"
     
     # slice K_fold
     
     # select dataset 
-    main_df = pd.read_csv(select_dataset(run_config['dataset']))
+    DATASET = 'compass_old'
+    print('=================={}=================='.format(DATASET))
+    # main_df = pd.read_csv(select_dataset(run_config['dataset']))
+    main_df = pd.read_csv(select_dataset(DATASET))
     # main_df = randomize_df(main_df)
     # main_df = POOL_preprocess(main_df)
     TARGET = get_label_colunm()
@@ -41,7 +43,7 @@ if __name__ == '__main__':
         '''===========CONFIGS==========='''
         K_BINS = False
         MODEL = 'xgb'
-        MODEL = 'rf'
+        # MODEL = 'rf'
         '''===========CONFIGS==========='''
         if K_BINS:
             X_train, inference_package,_,_ = POOL_preprocess(X_train, N_BINS = 100)
@@ -79,7 +81,7 @@ if __name__ == '__main__':
         # print(f'Y_train: {Y_train.shape}, Y_test: {Y_test.shape}')
         
         if MODEL == 'xgb':
-            model = xgb.XGBClassifier(random_state=42, n_estimators =100)
+            model = xgb.XGBClassifier(random_state=42, n_estimators =200)
         elif MODEL == 'rf':
             model = RandomForestClassifier(random_state=42, n_jobs=-1, n_estimators=2000)
         model.fit(X_train, Y_train)
@@ -90,6 +92,6 @@ if __name__ == '__main__':
         ACCS.append(acc)
         print(f'auc: {auc}')
         print(f'acc: {acc}')
-    print("=================={}{}==================".format(MODEL, K_BINS))
+    print("=================={}-{}==================".format(MODEL, K_BINS))
     print(f'Average AUC: {np.mean(AUCS)}')
     print(f'Average ACC: {np.mean(ACCS)}')

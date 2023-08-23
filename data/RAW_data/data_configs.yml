@@ -75,18 +75,6 @@ compass_old:
     - v_score_text
     - is_recid
   NUM:
-    age
-    juv_fel_count
-    juv_misd_count
-    juv_other_count
-    priors_count
-    days_b_screening_arrest
-    c_days_from_compas
-    end
-  LABEL:
-    - is_recid
-  uniform:
-  quantile:
     - age
     - juv_fel_count
     - juv_misd_count
@@ -95,7 +83,19 @@ compass_old:
     - days_b_screening_arrest
     - c_days_from_compas
     - end
-    
+  TARGET:
+    is_recid
+  uniform:
+  quntile:
+    - age
+    - juv_fel_count
+    - juv_misd_count
+    - juv_other_count
+    - priors_count
+    - days_b_screening_arrest
+    - c_days_from_compas
+    - end
+
 eye_movements_num:
   full_name: eye_movements_num
   file_path: data/RAW_data/eye_movements_num.csv
@@ -340,3 +340,30 @@ covertype_cat:
     - Hillshade_Noon
     - Hillshade_3pm
     - Horizontal_Distance_To_Fire_Points
+electricity_cat:
+  full_name: electricity_cat
+  file_path: data/RAW_data/electricity_cat.csv
+  task: classification
+  num_classes: 2
+  CAT:
+    - day
+    - class
+  NUM:
+    - date
+    - period
+    - nswprice
+    - nswdemand
+    - vicprice
+    - vicdemand
+    - transfer
+  TARGET:
+    class
+  uniform:
+  quntile:
+    - date
+    - period
+    - nswprice
+    - nswdemand
+    - vicprice
+    - vicdemand
+    - transfer
