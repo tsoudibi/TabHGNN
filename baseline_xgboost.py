@@ -27,7 +27,7 @@ if __name__ == '__main__':
     # slice K_fold
     
     # select dataset 
-    DATASET = 'compass_old'
+    DATASET = 'electricity_catp'
     print('=================={}=================='.format(DATASET))
     # main_df = pd.read_csv(select_dataset(run_config['dataset']))
     main_df = pd.read_csv(select_dataset(DATASET))

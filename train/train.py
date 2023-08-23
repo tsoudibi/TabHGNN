@@ -70,8 +70,12 @@ def train(model : nn.Module,
         # logs
         epoch_loss = 0
         # available_metrics = ['binary_AUC', 'ACC', 'R2']
-        train_metric = select_metric(metric, device=DEVICE)
-        test_metric = select_metric(metric, device=DEVICE)
+        # train_metric = select_metric(metric, device=DEVICE)
+        # test_metric = select_metric(metric, device=DEVICE)
+        train_metric_ACC = select_metric('ACC', device=DEVICE)
+        train_metric_AUC = select_metric('binary_AUC', device=DEVICE)
+        test_metric_ACC = select_metric('ACC', device=DEVICE)
+        test_metric_AUC = select_metric('binary_AUC', device=DEVICE)
         
         torch.cuda.empty_cache()
         iter = 0
@@ -117,22 +121,36 @@ def train(model : nn.Module,
                 preds = np.array(outputs.detach().cpu()).tolist()
             
             # the probability of the query node is 1 (from model output)
-            train_metric.update(torch.tensor(preds,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
+            # train_metric.update(torch.tensor(preds,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
+            train_metric_ACC.update(torch.tensor(preds,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
+            train_metric_AUC.update(torch.tensor(preds,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
             # AUC_metric.update(torch.tensor(pred_prob_of_is_1,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
             # iter += 1
             # if iter >= 100:
             #     break
             print_checkpoint_time('loss 2')
             if index == len(datset.FEATURE_POOL)//batch_size -1 and verbose >= 2:
-                stepper.set_postfix({train_metric.name :float(train_metric.compute())})
+                # stepper.set_postfix({train_metric.name :float(train_metric.compute())})
+                stepper.set_postfix({train_metric_ACC.name :float(train_metric_ACC.compute()),
+                                     train_metric_AUC.name :float(train_metric_AUC.compute())
+                                     })
                 stepper.update()
                 
         torch.cuda.empty_cache()
         epoch_loss = epoch_loss / batch_size
-        epoch_metric = float(train_metric.compute()) 
-        train_metric.reset()
+        # epoch_metric = float(train_metric.compute()) 
+        epoch_metric_ACC = float(train_metric_ACC.compute()) 
+        epoch_metric_AUC = float(train_metric_AUC.compute()) 
+        train_metric_ACC.reset()
+        train_metric_AUC.reset()
         if verbose == 1:
-            stepper_epoch.set_postfix({'loss_train':epoch_loss, train_metric.name+'_train':epoch_metric, train_metric.name+'_test':epoch_metric_test})
+            # stepper_epoch.set_postfix({'loss_train':epoch_loss, train_metric.name+'_train':epoch_metric, train_metric.name+'_test':epoch_metric_test})
+            stepper_epoch.set_postfix({'loss_train':epoch_loss,
+                                       train_metric_ACC.name+'_train':epoch_metric_ACC,
+                                       train_metric_ACC.name+'_test':epoch_metric_test_ACC,
+                                       train_metric_AUC.name+'_train':epoch_metric_AUC,
+                                       train_metric_AUC.name+'_test':epoch_metric_test_AUC,
+                                       })
         
         '''------------------------evaluate------------------------'''
         if (epoch+1) % evaluate_stride == 0: # evaluate_stride
@@ -172,19 +190,31 @@ def train(model : nn.Module,
                         preds = np.array(outputs.detach().cpu()).tolist()
                     
                     # AUC_metric_test.update(torch.tensor(pred_prob_of_is_1,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
-                    test_metric.update(torch.tensor(preds,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
+                    # test_metric.update(torch.tensor(preds,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
+                    test_metric_ACC.update(torch.tensor(preds,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
+                    test_metric_AUC.update(torch.tensor(preds,device=DEVICE),torch.tensor(TRUE,device=DEVICE))
                     print_checkpoint_time('loss')
                     # iter += 1
                     # if iter >= 100:
                         # break
             torch.cuda.empty_cache()
-            epoch_metric_test = float(test_metric.compute()) 
+            # epoch_metric_test = float(test_metric.compute()) 
+            epoch_metric_test_ACC = float(test_metric_ACC.compute()) 
+            epoch_metric_test_AUC = float(test_metric_AUC.compute()) 
             # epoch_metric_test = float(AUC_metric_test.compute()) 
             if verbose == 1:
-                stepper_epoch.set_postfix({'loss_train':epoch_loss, train_metric.name+'_train':epoch_metric, train_metric.name+'_test':epoch_metric_test})
+                # stepper_epoch.set_postfix({'loss_train':epoch_loss, train_metric.name+'_train':epoch_metric, train_metric.name+'_test':epoch_metric_test})
+                stepper_epoch.set_postfix({'loss_train':epoch_loss,
+                                           train_metric_ACC.name+'_train':epoch_metric_ACC,
+                                           train_metric_ACC.name+'_test':epoch_metric_test_ACC,
+                                           train_metric_AUC.name+'_train':epoch_metric_AUC,
+                                           train_metric_AUC.name+'_test':epoch_metric_test_AUC,
+                                           })
 
             # AUC_metric.reset()
-            test_metric.reset()
+            # test_metric.reset()
+            test_metric_ACC.reset()
+            test_metric_AUC.reset()
             # break
             # del AUC_metric_test, AUC_metric
             tmp_log.append(float(epoch_loss))
@@ -193,28 +223,43 @@ def train(model : nn.Module,
             
             # print(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | AUC: {epoch_metric} |")
             if verbose >= 2:
-                print(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_metric} | {train_metric.name}_test: {epoch_metric_test}")
+                # print(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_metric} | {train_metric.name}_test: {epoch_metric_test}")
+                print(f"Epoch{epoch+1}/{epochs} | Loss: {round(epoch_loss,3)} | {train_metric_ACC.name}_train: {round(epoch_metric_ACC,3)} | {train_metric_ACC.name}_test: {round(epoch_metric_test_ACC,3)} | {train_metric_AUC.name}_train: {round(epoch_metric_AUC,3)} | {train_metric_AUC.name}_test: {round(epoch_metric_test_AUC,3)}")
         
         
         # with open('logs/' + log_name + '.txt', 'a') as f:
         #     # f.write(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | AUC: {epoch_metric}| ")
         #     f.write(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_metric}| {train_metric.name}_test: {epoch_metric_test}\n ")
         if wandb_log:
-            wandb.log({'loss': epoch_loss, train_metric.name+'_train': epoch_metric, train_metric.name+'_test': epoch_metric_test, 'epoch': epoch})
+            # wandb.log({'loss': epoch_loss, train_metric.name+'_train': epoch_metric, train_metric.name+'_test': epoch_metric_test, 'epoch': epoch})
+            wandb.log({'loss': epoch_loss,
+                       train_metric_ACC.name+'_train': epoch_metric_ACC,
+                       train_metric_ACC.name+'_test': epoch_metric_test_ACC,
+                       train_metric_AUC.name+'_train': epoch_metric_AUC,
+                       train_metric_AUC.name+'_test': epoch_metric_test_AUC,
+                       'epoch': epoch})
         if tensorboard_log:
             writer.add_scalar('loss', epoch_loss, epoch)
-            writer.add_scalar(train_metric.name+'_train', epoch_metric, epoch)
-            writer.add_scalar(train_metric.name+'_test', epoch_metric_test, epoch)
+            # writer.add_scalar(train_metric.name+'_train', epoch_metric, epoch)
+            writer.add_scalar(train_metric_ACC.name+'_train', epoch_metric_ACC, epoch)
+            writer.add_scalar(train_metric_ACC.name+'_train', epoch_metric_ACC, epoch)
+            # writer.add_scalar(train_metric.name+'_test', epoch_metric_test, epoch)
+            writer.add_scalar(train_metric_AUC.name+'_test', epoch_metric_test_AUC, epoch)
+            writer.add_scalar(train_metric_AUC.name+'_test', epoch_metric_test_AUC, epoch)
             writer.flush()
         if logger is not None:
+            # logger.update(epoch, epoch_loss, epoch_metric, epoch_metric_test)
             logger.update(epoch, epoch_loss, epoch_metric, epoch_metric_test)
             logger.save()
             
     if logger is not None:
-        logger.plot_metric()
-        logger.plot_loss()
-        best_loss, best_train_metric, best_test_metric, best_epoch = logger.get_best()
-        print(f"best_loss: {best_loss} | best_{train_metric.name}_train: {best_train_metric} | best_{train_metric.name}_test: {best_test_metric} | best_epoch: {best_epoch}")
+        # logger.plot_metric()
+        # logger.plot_loss()
+        name, best_loss, best_train_metric, best_test_metric, best_epoch = logger.get_best(0)
+        name_, best_loss_, best_train_metric_, best_test_metric_, best_epoch_ = logger.get_best(1)
+        # print(f"best_loss: {best_loss} | best_{train_metric.name}_train: {best_train_metric} | best_{train_metric.name}_test: {best_test_metric} | best_epoch: {best_epoch}")
+        print(f"best_loss: {best_loss} | best_{name}_train: {best_train_metric} | best_{name}_test: {best_test_metric} | best_epoch: {best_epoch}")
+        print(f"best_loss: {best_loss_} | best_{name_}_train: {best_train_metric_} | best_{name_}_test: {best_test_metric_} | best_epoch: {best_epoch_}")
     if verbose >=1:
-        print(f"{log_name} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_metric} | {train_metric.name}_test: {epoch_metric_test}")
-
+        # print(f"{log_name} | Loss: {epoch_loss} | {train_metric.name}_train: {epoch_metric} | {train_metric.name}_test: {epoch_metric_test}")
+        pass

@@ -340,6 +340,10 @@ covertype_cat:
     - Hillshade_Noon
     - Hillshade_3pm
     - Horizontal_Distance_To_Fire_Points
+
+
+
+    
 electricity_cat:
   full_name: electricity_cat
   file_path: data/RAW_data/electricity_cat.csv
@@ -367,6 +371,7 @@ electricity_cat:
     - vicprice
     - vicdemand
     - transfer
+
 credit:
   full_name: credit
   file_path: data/RAW_data/credit.csv

@@ -2,7 +2,7 @@ run_config:
   log_name: test
   print_time: False
   device: cuda
-  dataset: compass_old
+  dataset: credit
   metric: ACC
   # 'binary_AUC', 'ACC'
   max_epoch: 200

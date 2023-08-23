@@ -10,29 +10,40 @@ class Logger():
             self.name = config['run_config']['log_name']+'_'+config['run_config']['dataset'] + '_' + now
         else:
             self.name = name
-        self.LOG = {}
-        self.LOG['name'] = self.name
-        self.LOG['used_metric'] = config['run_config']['metric']
-        self.LOG['loss'] = []
-        self.LOG['train_metric'] = []
-        self.LOG['test_metric'] = []
-        self.LOG['best_loss'] = 10000000000
-        self.LOG['best_train_metric'] = -100000
-        self.LOG['best_test_metric'] = -100000
-        self.LOG['best_epoch'] = -1
+        self.LOG = [{},{}]
+        for i in range(2):
+            self.LOG[i]['name'] = self.name
+            self.LOG[i]['used_metric'] = config['run_config']['metric']
+            self.LOG[i]['loss'] = []
+            self.LOG[i]['train_metric'] = []
+            self.LOG[i]['test_metric'] = []
+            self.LOG[i]['best_loss'] = 10000000000
+            self.LOG[i]['best_train_metric'] = -100000
+            self.LOG[i]['best_test_metric'] = -100000
+            self.LOG[i]['best_epoch'] = -1
         
-    def update(self, epoch, loss, train_metric, test_metric):
-        self.LOG['loss'].append(loss)
-        self.LOG['train_metric'].append(train_metric)
-        self.LOG['test_metric'].append(test_metric)
-        if test_metric >= self.LOG['best_test_metric']:
-            self.LOG['best_loss'] = loss
-            self.LOG['best_train_metric'] = train_metric
-            self.LOG['best_test_metric'] = test_metric
-            self.LOG['best_epoch'] = epoch
+    def update(self, epoch, loss, train_metric_ACC, test_metric_ACC, train_metric_AUC, test_metric_AUC):
+        # metrics: [(train_metric, test_metric)]
+        self.LOG[0]['loss'].append(loss)
+        self.LOG[0]['train_metric'].append(train_metric_ACC)
+        self.LOG[0]['test_metric'].append(test_metric_ACC)
+        if test_metric_ACC >= self.LOG[0]['best_test_metric']:
+            self.LOG[0]['best_loss'] = loss
+            self.LOG[0]['best_train_metric'] = train_metric_ACC
+            self.LOG[0]['best_test_metric'] = test_metric_ACC
+            self.LOG[0]['best_epoch'] = epoch
+        # metrics: [(train_metric, test_metric)]
+        self.LOG[1]['loss'].append(loss)
+        self.LOG[1]['train_metric'].append(train_metric_AUC)
+        self.LOG[1]['test_metric'].append(test_metric_AUC)
+        if test_metric_AUC >= self.LOG[1]['best_test_metric']:
+            self.LOG[1]['best_loss'] = loss
+            self.LOG[1]['best_train_metric'] = train_metric_AUC
+            self.LOG[1]['best_test_metric'] = test_metric_AUC
+            self.LOG[1]['best_epoch'] = epoch
     
-    def get_best(self):
-        return self.LOG['best_loss'], self.LOG['best_train_metric'], self.LOG['best_test_metric'], self.LOG['best_epoch']
+    def get_best(self,i):
+        return self.LOG[i]['name'], self.LOG['best_loss'], self.LOG['best_train_metric'], self.LOG['best_test_metric'], self.LOG['best_epoch']
     
     def save(self):
         import json
@@ -59,7 +70,7 @@ class Logger():
     def plot_metric(self):
         import matplotlib.pyplot as plt
         
-        plt.plot(self.LOG['train_metric'], label = self.LOG['used_metric']+'_train')
+        plt.plot(self.LOG[]['train_metric'], label = self.LOG['used_metric']+'_train')
         plt.plot(self.LOG['test_metric'], label = self.LOG['used_metric']+'_test')
         plt.title(self.LOG['name'])
         plt.legend()
