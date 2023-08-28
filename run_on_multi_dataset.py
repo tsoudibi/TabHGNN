@@ -20,9 +20,9 @@ if __name__ == '__main__':
     logger_config = config['logger_config']
     
     '''================alternation================'''
-    dataset_list = ['electricity_cat']
+    dataset_list = ['credit','eye_movements_cat']
     # dataset_list = ['adult','compas','eye_movements_num','eye_movements_cat']
-    metric_list = [ 'binary_AUC','ACC']
+    metric_list = [ 'binary_AUC']
     # metric_list = ['binary_AUC', 'ACC']
     
     for the_dataset in dataset_list:
@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
                 logger = None
                 if logger_config['use_logger']:
-                    name = run_config['dataset'] + '_' + run_config['metric'] + '_' + str(index)
+                    name = the_dataset + '_' + run_config['metric'] + '_' + str(index)
                     logger = Logger(config,name)
                     
                 Main_data = HGNN_dataset( train_pool, 

@@ -2,7 +2,7 @@ run_config:
   log_name: test
   print_time: False
   device: cuda
-  dataset: credit
+  dataset: eye_movements_cat
   metric: ACC
   # 'binary_AUC', 'ACC'
   max_epoch: 200
@@ -20,8 +20,8 @@ run_config:
   evaluate_stride: 1
 wandb_config:
   use_wandb: True
-  entity: tabhyperformer
-  project: overall
+  entity: a220284268
+  project: TABHGNN
   name : run
   group: run 
   notes: V11
@@ -29,6 +29,6 @@ tensorboard_config:
   use_tensorboard: False
   name: test
 logger_config:
-  use_logger: True
+  use_logger: False
   dump_log: True
   plot_log: True

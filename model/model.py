@@ -127,10 +127,14 @@ class TransformerDecoderModel(nn.Module):
         
         self.Field_embedding = nn.Embedding(F, embedding_dim, dtype=torch.float)
         
-        self.transformer_decoder = TabTransformerDecoder(
-            TabHyperformer_Layer(embedding_dim,  nhead = 2 ),
-            num_layers
-        )
+        self.transformer_decoder = {}
+        self.transformer_decoder['L2S'] = TabTransformerDecoder(TabHyperformer_Layer(embedding_dim,  nhead = 2 ), num_layers).to(DEVICE)
+        self.transformer_decoder['S2C'] = TabTransformerDecoder(TabHyperformer_Layer(embedding_dim,  nhead = 2 ), num_layers).to(DEVICE)
+        self.transformer_decoder['C2F'] = TabTransformerDecoder(TabHyperformer_Layer(embedding_dim,  nhead = 2 ), num_layers).to(DEVICE)
+        self.transformer_decoder['F2C'] = TabTransformerDecoder(TabHyperformer_Layer(embedding_dim,  nhead = 2 ), num_layers).to(DEVICE)
+        self.transformer_decoder['C2S'] = TabTransformerDecoder(TabHyperformer_Layer(embedding_dim,  nhead = 2 ), num_layers).to(DEVICE)
+        self.transformer_decoder['S2L'] = TabTransformerDecoder(TabHyperformer_Layer(embedding_dim,  nhead = 2 ), num_layers).to(DEVICE)
+        
         
         # downstream task
         if get_task() == 'classification':
@@ -343,17 +347,17 @@ class TransformerDecoderModel(nn.Module):
                                                         memory_mask = Tensor.contiguous(self.tmpmask_L2S.clone().detach().transpose(1, 2))[:,:L,:S_])# + L_embedded
         else:
             for i in range(PROPAGATE_STEPS):
-                S_embedded = self.transformer_decoder(S_embedded,L_embedded, origin_S,
+                S_embedded = self.transformer_decoder['L2S'] (S_embedded,L_embedded, origin_S,
                                                     memory_mask = self.tmpmask_L2S.clone().detach()[:,:S_,:L])# + S_embedded
-                C_embedded = self.transformer_decoder(C_embedded,S_embedded, origin_C,
+                C_embedded = self.transformer_decoder['S2C'] (C_embedded,S_embedded, origin_C,
                                                     memory_mask = masks['S2C'].clone().detach()[:,:C,:S_])# + C_embedded   
-                F_embedded = self.transformer_decoder(F_embedded,C_embedded, origin_F,
+                F_embedded = self.transformer_decoder['C2F'] (F_embedded,C_embedded, origin_F,
                                                     memory_mask = masks['C2F'].clone().detach()[:,:F,:C])# + F_embedded
-                C_embedded = self.transformer_decoder(C_embedded,F_embedded, origin_C,
+                C_embedded = self.transformer_decoder['F2C'] (C_embedded,F_embedded, origin_C,
                                                     memory_mask = Tensor.contiguous(masks['C2F'].clone().detach().transpose(1, 2))[:,:C,:F])# + C_embedded
-                S_embedded = self.transformer_decoder(S_embedded,C_embedded, origin_S,
+                S_embedded = self.transformer_decoder['C2S'] (S_embedded,C_embedded, origin_S,
                                                     memory_mask = Tensor.contiguous(masks['S2C'].clone().detach().transpose(1, 2))[:,:S_,:C])# + S_embedded
-                L_embedded = self.transformer_decoder(L_embedded,S_embedded, origin_L,
+                L_embedded = self.transformer_decoder['S2L'] (L_embedded,S_embedded, origin_L,
                                                     memory_mask = Tensor.contiguous(self.tmpmask_L2S.clone().detach().transpose(1, 2))[:,:L,:S_])# + L_embedded
         print_checkpoint_time('propagate')
         # print('after',S_embedded[0][0])

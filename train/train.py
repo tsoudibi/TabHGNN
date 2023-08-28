@@ -14,6 +14,9 @@ import wandb
 
 tmp_log = []
 tmp__log = []
+
+debug_array = np.array([])
+debug_array_true = np.array([])
 def train(model : nn.Module, 
           datset : HGNN_dataset, 
           metric : str,
@@ -185,6 +188,10 @@ def train(model : nn.Module,
                         TRUE = np.argmax(LABEL_POOL_,axis=1)
                         # print(outputs.softmax(dim=1)[0])
                         preds = np.array(outputs.softmax(dim=1).detach().cpu()).tolist()
+                        global debug_array, debug_array_true
+                        debug_array = np.append(debug_array,preds)
+                        debug_array_true = np.append(debug_array_true,TRUE)
+                        # print(sum(preds)/len(preds))
                     elif get_task() == 'regression':
                         TRUE = LABEL_POOL_
                         preds = np.array(outputs.detach().cpu()).tolist()
@@ -217,9 +224,12 @@ def train(model : nn.Module,
             test_metric_AUC.reset()
             # break
             # del AUC_metric_test, AUC_metric
-            tmp_log.append(float(epoch_loss))
-            tmp__log.append(float(epoch_metric))
-
+            # tmp_log.append(float(epoch_loss))
+            # tmp__log.append(float(epoch_metric))
+            np.save('debug/credit'+str(epoch)+'.npy', [debug_array])
+            np.save('debug/credit'+str(epoch)+'_true.npy', [debug_array_true])
+            debug_array = np.array([])
+            debug_array_true = np.array([])
             
             # print(f"Epoch{epoch+1}/{epochs} | Loss: {epoch_loss} | AUC: {epoch_metric} |")
             if verbose >= 2:
@@ -249,7 +259,8 @@ def train(model : nn.Module,
             writer.flush()
         if logger is not None:
             # logger.update(epoch, epoch_loss, epoch_metric, epoch_metric_test)
-            logger.update(epoch, epoch_loss, epoch_metric, epoch_metric_test)
+            logger.update(epoch, epoch_loss, epoch_metric_ACC, epoch_metric_test_ACC,
+                          epoch_metric_AUC, epoch_metric_test_AUC)
             logger.save()
             
     if logger is not None:

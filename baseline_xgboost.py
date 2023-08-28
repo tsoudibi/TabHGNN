@@ -27,7 +27,8 @@ if __name__ == '__main__':
     # slice K_fold
     
     # select dataset 
-    DATASET = 'electricity_catp'
+    # ['adult','compas','compass_old','eye_movements_num','eye_movements_cat','credit','electricity_cat']
+    DATASET = 'adult'
     print('=================={}=================='.format(DATASET))
     # main_df = pd.read_csv(select_dataset(run_config['dataset']))
     main_df = pd.read_csv(select_dataset(DATASET))
@@ -42,8 +43,8 @@ if __name__ == '__main__':
         X_train, X_test = main_df.loc[train_index], main_df.loc[test_index]
         '''===========CONFIGS==========='''
         K_BINS = False
-        MODEL = 'xgb'
-        # MODEL = 'rf'
+        # MODEL = 'xgb'
+        MODEL = 'rf'
         '''===========CONFIGS==========='''
         if K_BINS:
             X_train, inference_package,_,_ = POOL_preprocess(X_train, N_BINS = 100)
@@ -76,7 +77,7 @@ if __name__ == '__main__':
                 le.fit(main_df[column].astype(str))
                 X_train[column] = le.transform(X_train[column].astype(str))
                 X_test[column] = le.transform(X_test[column].astype(str))
-        print(f'=========Fold {index}:==========')
+        # print(f'=========Fold {index}:==========')
         # print(f'X_train: {X_train.shape}, X_test: {X_test.shape}')
         # print(f'Y_train: {Y_train.shape}, Y_test: {Y_test.shape}')
         
@@ -90,8 +91,8 @@ if __name__ == '__main__':
         auc = roc_auc_score(Y_test, Y_prob[:, 1])
         AUCS.append(auc)
         ACCS.append(acc)
-        print(f'auc: {auc}')
-        print(f'acc: {acc}')
+        # print(f'auc: {auc}')
+        # print(f'acc: {acc}')
     print("=================={}-{}==================".format(MODEL, K_BINS))
-    print(f'Average AUC: {np.mean(AUCS)}')
-    print(f'Average ACC: {np.mean(ACCS)}')
+    print(f'Average AUC: {np.mean(AUCS)}, std: {np.std(AUCS)}')
+    print(f'Average ACC: {np.mean(ACCS)}, std: {np.std(ACCS)}')

@@ -43,7 +43,7 @@ class Logger():
             self.LOG[1]['best_epoch'] = epoch
     
     def get_best(self,i):
-        return self.LOG[i]['name'], self.LOG['best_loss'], self.LOG['best_train_metric'], self.LOG['best_test_metric'], self.LOG['best_epoch']
+        return self.LOG[i]['name'], self.LOG[i]['best_loss'], self.LOG[i]['best_train_metric'], self.LOG[i]['best_test_metric'], self.LOG[i]['best_epoch']
     
     def save(self):
         import json
@@ -70,7 +70,7 @@ class Logger():
     def plot_metric(self):
         import matplotlib.pyplot as plt
         
-        plt.plot(self.LOG[]['train_metric'], label = self.LOG['used_metric']+'_train')
+        plt.plot(self.LOG['train_metric'], label = self.LOG['used_metric']+'_train')
         plt.plot(self.LOG['test_metric'], label = self.LOG['used_metric']+'_test')
         plt.title(self.LOG['name'])
         plt.legend()
