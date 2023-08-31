@@ -2,7 +2,7 @@ run_config:
   log_name: test
   print_time: False
   device: cuda
-  dataset: adult
+  dataset: compas
   metric: ACC
   # 'binary_AUC', 'ACC'
   max_epoch: 200
@@ -19,11 +19,11 @@ run_config:
   random_state: 42
   evaluate_stride: 1
 wandb_config:
-  use_wandb: False
+  use_wandb: True
   entity: a220284268
   project: TABHGNN
   name : run
-  group: compas_N500K500
+  group: compas_faster
   notes: V11
 tensorboard_config:
   use_tensorboard: False

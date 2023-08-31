@@ -174,7 +174,7 @@ class TransformerDecoderModel(nn.Module):
         if sample_indices is not None:
             self.tmpmask_L2S = dataset.MASKS['L2S'].clone().detach()
             def maskout_label(batch_index, sample_indice):
-                query_index = sample_indice.index(query_indices[batch_index]) # query_index: index of query node in sample_indice of the batch
+                query_index = np.argwhere(sample_indice == query_indices[batch_index])[0][0]
                 # L2S mask shape : B, S, L
                 self.tmpmask_L2S[batch_index, query_index] = 1
                 self.tmpmask_L2S[batch_index, query_index][L-1] = 0  # connect to all label nodes except the unseen label
@@ -238,10 +238,9 @@ class TransformerDecoderModel(nn.Module):
             F_input = F_input.repeat(batch_size,1,1)
             # updata mask for inference node
             dataset.make_mask_test(query_indices) # query node equal to inference node, only one query node is allowed
+            print_checkpoint_time('make_mask_test')
             masks = dataset.MASKS
             # modify C_input, make unseen catagory nodes' value equal to sample's value
-            # print(dataset.TEST_POOL.iloc[0])
-            # print(dataset.TEST_POOL.columns)
             NUM, _, _ = get_feilds_attributes()
             
             # cacyulate numerical_unseen_indexes
@@ -251,10 +250,10 @@ class TransformerDecoderModel(nn.Module):
             
             test_data_pool = dataset.TEST_POOL_VALUES.drop(columns=[get_target()])
             C_input[:,numerical_unseen_indexes] = torch.tensor((test_data_pool.iloc[query_indices][NUM]).to_numpy(),dtype=torch.double,device=get_DEVICE()).unsqueeze(-1)
-            # C_input[:,list(dataset.unseen_node_indexs_C.values())] = torch.tensor((dataset.TEST_POOL.drop(columns=[get_target()]).iloc[query_indices]).to_numpy(),dtype=torch.double,device=get_DEVICE()).unsqueeze(-1)
-            # print(test_data_pool)
-            # print((test_data_pool.iloc[0][NUM]).to_numpy())
+            print_checkpoint_time('modify C_input')
+
             self.maskout_lable(dataset, query_indices, None)
+            print_checkpoint_time('maskout_lable')
             
             
             # the query node's indexs in sample_indices
@@ -295,15 +294,9 @@ class TransformerDecoderModel(nn.Module):
         
         C_embedded_num = ((C_inputs.unsqueeze(-1) * weights.unsqueeze(0)).sum(-1) + biases.unsqueeze(0))
         
-        # print(field)
-        # print(num_CAT)
-        # print(sum(field[-num_CAT:]))
-        # print(C_input.shape)
-        # print(C_input[:,-1*sum(field[-num_CAT:]):].squeeze(2).long().shape)
         if num_CAT > 0:
             catagorical_filed_nodes = sum(field[-num_CAT:]) # pick catagory fields
             C_embedded_cat = self.Catagory_embedding_cat(C_input[:,-catagorical_filed_nodes:].squeeze(2).long()).float() 
-            # print( C_embedded_cat.shape)
             C_embedded = torch.cat([C_embedded_num, C_embedded_cat], dim = 1)
         else:
             C_embedded = C_embedded_num
@@ -311,9 +304,6 @@ class TransformerDecoderModel(nn.Module):
         
         F_embedded = self.Field_embedding(F_input.long()).squeeze(2).float()
         print_checkpoint_time('get F_embedded')
-        # print(C_embedded)
-        # print(query_indices, K)
-        # print(L_embedded.shape, S_embedded.shape, C_embedded.shape, F_embedded.shape)
         
         
         # propagate steps: L→S→C→F
@@ -354,27 +344,20 @@ class TransformerDecoderModel(nn.Module):
         else:
             for i in range(PROPAGATE_STEPS):
                 S_embedded = self.transformer_decoder['L2S'] (S_embedded,L_embedded, origin_S,
-                                                    memory_mask = self.tmpmask_L2S.clone().detach()[:,:S_,:L])# + S_embedded
+                                                    memory_mask = self.tmpmask_L2S[:,:S_,:L])# + S_embedded
                 C_embedded = self.transformer_decoder['S2C'] (C_embedded,S_embedded, origin_C,
-                                                    memory_mask = masks['S2C'].clone().detach()[:,:C,:S_])# + C_embedded   
+                                                    memory_mask = masks['S2C'][:,:C,:S_])# + C_embedded   
                 F_embedded = self.transformer_decoder['C2F'] (F_embedded,C_embedded, origin_F,
-                                                    memory_mask = masks['C2F'].clone().detach()[:,:F,:C])# + F_embedded
+                                                    memory_mask = masks['C2F'][:,:F,:C])# + F_embedded
                 C_embedded = self.transformer_decoder['F2C'] (C_embedded,F_embedded, origin_C,
-                                                    memory_mask = Tensor.contiguous(masks['C2F'].clone().detach().transpose(1, 2))[:,:C,:F])# + C_embedded
+                                                    memory_mask = Tensor.contiguous(masks['C2F'].transpose(1, 2))[:,:C,:F])# + C_embedded
                 S_embedded = self.transformer_decoder['C2S'] (S_embedded,C_embedded, origin_S,
-                                                    memory_mask = Tensor.contiguous(masks['S2C'].clone().detach().transpose(1, 2))[:,:S_,:C])# + S_embedded
+                                                    memory_mask = Tensor.contiguous(masks['S2C'].transpose(1, 2))[:,:S_,:C])# + S_embedded
                 # L_embedded = self.transformer_decoder['S2L'] (L_embedded,S_embedded, origin_L,
                 #                                     memory_mask = Tensor.contiguous(self.tmpmask_L2S.clone().detach().transpose(1, 2))[:,:L,:S_])# + L_embedded
         print_checkpoint_time('propagate')
-        # print('after',S_embedded[0][0])
         output = self.MLP(S_embedded)
         outputs = output[np.arange(len(query_indexs)), query_indexs]
         print_checkpoint_time('MLP')
-        # outputs = []
-        # for index, query in enumerate(query_indexs):
-            # outputs.append(output[index, query])
-        # outputs = torch.stack(outputs, dim = 0)
-        # output_batch = [output[:,query_indexs][query_indexs[i]] for i in range(batch_size)]
-        # print(output_batch)
         return outputs
   

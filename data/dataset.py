@@ -74,7 +74,6 @@ class HGNN_dataset():
 
         nodes_num = {'L':L, 'S':S, 'C':C, 'F':F}
         print('node_nums', nodes_num)
-        # print('total', L+S+C+F, 'nodes')
         
         # get samples indexs for each label
         self.labe_to_index = {}
@@ -122,20 +121,12 @@ class HGNN_dataset():
             masls['C2F'] = torch.Size([16, 472]), values in torch.Size([14, 470])\\
         Notice: xformer require the mask's tensor must align on memory, and should be slice of a tensor if shape cannot be divided by 8
         '''
-        DEVICE = get_DEVICE()
-        L, S, C, F = self.nodes_num['L'], self.nodes_num['S'], self.nodes_num['C'], self.nodes_num['F']
         sample_size = len(sample_indices[0])
         # caculate masking
         masks = {}
-        # print('sample',sample_indices[0][0])
         masks['L2S'] = self.MASKS_FULL['L2S'][sample_indices]
-        # print('maskL2S',self.MASKS_FULL['L2S'][sample_indices[0][0]])
-        masks['S2C'] = self.MASKS_FULL['S2C'][:,sample_indices].permute(1,0,2).contiguous()
-        # print('catagory',self.FEATURE_POOL.iloc[sample_indices[0][0]].values)
-        # print('maskS2C',masks['S2C'][0].T[0][self.FEATURE_POOL.iloc[sample_indices[0][0]].values])
+        masks['S2C'] = self.MASKS_FULL['S2C'][:,sample_indices].permute(1,0,2)
         masks['C2F'] = self.MASKS_FULL['C2F'].repeat(len(query_indices),1,1)
-        # print(masks['C2F'][0][0].shape)
-        # print('maskC2F',masks['C2F'][0].T[self.FEATURE_POOL.iloc[sample_indices[0][0]].values])
         self.MASKS = masks
         self.nodes_num['K'] = sample_size
         
@@ -173,8 +164,6 @@ class HGNN_dataset():
         tmp[torch.arange(len(self.FEATURE_POOL), device=DEVICE).unsqueeze(-1), torch.tensor(tmp_df.values, device=DEVICE)] = 1
         tmp = tmp.T.contiguous()
         masks['S2C'] = tmp
-        # print('S2C', masks['S2C'].shape)
-        # print('S2C', masks['S2C'][18,0])
 
         # catagory to field
         # to do : this is wrong , should connect all catagory nodes (even unseen nodes))
@@ -184,8 +173,6 @@ class HGNN_dataset():
             for j in (unique_items[i]):
                 tmp[i][j] = 1
         masks['C2F'] = tmp
-        # print('C2F', masks['C2F'].shape)
-        # print('C2F', sum(masks['C2F'][0]))
         self.MASKS = masks
         self.MASKS_FULL = masks
         
@@ -199,7 +186,7 @@ class HGNN_dataset():
             indexs_in_test_pool: list of indexs of nodes in test pool, which are the query nodes for inference
                                 that is, query_indices.
         '''
-        L, S, C, F = self.nodes_num['L'], self.nodes_num['S'], self.nodes_num['C'], self.nodes_num['F']
+        S = self.nodes_num['S']
         
         masks = {}
 
@@ -207,12 +194,8 @@ class HGNN_dataset():
         C_connection = self.TEST_POOL.drop(self.LABEL_COLUMN, axis=1).values
 
         masks['L2S'] = self.MASKS_FULL['L2S'].clone().detach()
-        # print(masks['L2S'].shape)
-        # print(masks['L2S'].sum())
         masks['L2S'][S-1, :] = 1 # connect to all Label nodes
         masks['L2S'] = masks['L2S'].repeat(len(indexs_in_test_pool),1,1) # repeat for batch
-        # print(indexs_in_test_pool)
-        # print(C_pool_values[indexs_in_test_pool[0]])
         
         def edit_S2C(index):
             masks['S2C'][index, C_connection[indexs_in_test_pool[index]],S-1] = 1  
@@ -243,39 +226,15 @@ class HGNN_dataset():
         L, S, C, F = self.nodes_num['L'], self.nodes_num['S'], self.nodes_num['C'], self.nodes_num['F']
         # L
         L_input = torch.tensor([range(L)], device=DEVICE).reshape(-1,1)
-        # print('L_input', L_input.type(), L_input.shape)
-       
         # S (initialize by random)
         S_input = torch.rand(self.embedding_dim, device=DEVICE).repeat(S,1)
-        # print('S_input', S_input.type(), S_input.shape)
         # C 
         C_input = torch.tensor(np.array([self.C_POOL]), device=DEVICE).reshape(-1,1)
-        # print('C_input', C_input.type(), C_input.shape)
         # F 
         F_input = torch.tensor([range(F)], device=DEVICE).reshape(-1,1)
-        # print('F_input', F_input.type(), F_input.shape)
         # 
         self.INPUTS = (L_input, S_input, C_input, F_input)
         self.INPUT_DIMS = (L_input.size(1), S_input.size(1), C_input.size(1), F_input.size(1))
-
-    def sample_with_distrubution(self, sample_size):
-        '''
-        Sample equally from each label with required sample size\\
-        forced to make balenced sample
-        '''
-        # # decide each label's number of samples (fourced to be balenced if possible) 
-        # label_list = []
-        # label_unique = list(self.labe_to_index.keys())
-        # count = sample_size // len(label_unique)
-        # remainder = sample_size % len(label_unique)
-        # label_list = [item for item in label_unique for _ in range(count)]
-        # label_list.extend(random.sample(label_unique, remainder))
-        # # sample from indexes
-        # def choice_with_label(lable):
-        #     return random.choice(self.labe_to_index[0]+self.labe_to_index[1])
-        # indices = list(map(choice_with_label, label_list))
-        # return indices     
-        return torch.randperm(len(self.TRAIN_POOL),device=get_DEVICE())[:sample_size].tolist()
         
     def get_sample(self, sample_size, query_indices = []):
         '''get sample nodes indices, and update mask and input tensor
@@ -293,37 +252,13 @@ class HGNN_dataset():
         
         The included nodes shold not and will not be repeated, in case of the lable leakage.
         '''
-        DEVICE = get_DEVICE()
-        # include specific nodes (e.g. query nodes), while remaining sample_size
-        # sample_indices = []
-        # if query_indices is not []:
-        #         def make_sample_indices(query):
-        #             indices = self.sample_with_distrubution(sample_size - 1)
-        #             while query in indices:
-        #                 indices = self.sample_with_distrubution(sample_size - 1)
-        #             # add query nodes into sample_indices
-        #             indices.append(query)
-        #             return sorted(indices)
-        #         sample_indices = list(map(make_sample_indices, query_indices))
-        #     # for query in query_indices:
-        #         # indices = self.sample_with_distrubution(sample_size - 1)
-        #         # while query in indices:
-        #         #     indices = self.sample_with_distrubution(sample_size - 1)
-        #         # # add query nodes into sample_indices
-        #         # indices.append(query)
-        #         # sample_indices.append(sorted(indices))
-        # else:
-        #     indices = self.sample_with_distrubution(sample_size - len(query_indices))
-        #     sample_indices.append(sorted(indices))
             
         # torch.rand + argsort 
         query_indices_tensor = torch.tensor(query_indices,device=get_DEVICE()).unsqueeze(-1)
         random_indices_tensor = torch.rand(len(query_indices),len(self.TRAIN_POOL),device=get_DEVICE()).argsort(dim=-1)[:,:sample_size-1]
-        # print(random_indices_tensor.shape, query_indices_tensor.shape)
         while (random_indices_tensor == query_indices_tensor.view(-1, 1)).any():
-            # print(sample_size)
-            random_indices_tensor = torch.where(random_indices_tensor == query_indices_tensor.view(-1, 1), random.randint(0,len(self.TRAIN_POOL)), random_indices_tensor)
-        sample_indices = torch.cat((query_indices_tensor, random_indices_tensor), dim=1).tolist()
+            random_indices_tensor = torch.where(random_indices_tensor == query_indices_tensor.view(-1, 1), torch.randint(0,len(self.TRAIN_POOL),(1,),device=get_DEVICE()), random_indices_tensor)
+        sample_indices = np.array(torch.cat((query_indices_tensor, random_indices_tensor), dim=1).tolist())
         
         # update mask
         # modify input tensor
@@ -350,7 +285,6 @@ class HGNN_dataset():
             return mask
         DEVICE = get_DEVICE()
         unseen_node_indexs_list = list(self.unseen_node_indexs_C.values())
-        # print('unseen_node_indexs_list', unseen_node_indexs_list)
         mask_sparse = torch.clone(mask).to_sparse()
         indices = torch.clone(mask_sparse.indices()[1])
         num_batches = mask_sparse.indices()[0].max()+1
@@ -371,12 +305,9 @@ class HGNN_dataset():
             replacement_table = []
             lower_bound = 0
             for unseen_node_index in unseen_node_indexs_list:
-                # for _ in range(mask_sparse.indices()[2].max()+1):
-                    # replacement_table.append(random.randint(lower_bound, unseen_node_index+1))
                 replacement_table.append(torch.randint(lower_bound, unseen_node_index+1, (mask_sparse.indices()[2].max()+1,),device=DEVICE))
                 lower_bound = unseen_node_index+1
             replacement_table = torch.stack(replacement_table, dim = 0).flatten()
-            # replacement_table = torch.tensor(replacement_table, device=DEVICE).flatten()
         else:
             raise ValueError('strategy should be either unseen or random')
         
@@ -389,6 +320,5 @@ class HGNN_dataset():
             indices[to_be_replace + batch*edges_per_batch] = replacement_table[to_be_replace]
 
         mask_sparse.indices()[1]  = indices
-        # print(indices)
         return mask_sparse.to_dense()
 
