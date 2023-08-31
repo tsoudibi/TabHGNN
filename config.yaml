@@ -2,7 +2,7 @@ run_config:
   log_name: test
   print_time: False
   device: cuda
-  dataset: eye_movements_cat
+  dataset: adult
   metric: ACC
   # 'binary_AUC', 'ACC'
   max_epoch: 200
@@ -13,17 +13,17 @@ run_config:
   num_layers: 1
   embedding_dim: 128
   propagation_steps: 1
-  unseen_rate: 0
-  aug_strategy: "random"
+  unseen_rate: 0.0
+  aug_strategy: "unseen"
   N_BINS: 100
   random_state: 42
   evaluate_stride: 1
 wandb_config:
-  use_wandb: True
+  use_wandb: False
   entity: a220284268
   project: TABHGNN
   name : run
-  group: run 
+  group: compas_N500K500
   notes: V11
 tensorboard_config:
   use_tensorboard: False

@@ -173,14 +173,15 @@ class TransformerDecoderModel(nn.Module):
         L = dataset.nodes_num['L']
         if sample_indices is not None:
             self.tmpmask_L2S = dataset.MASKS['L2S'].clone().detach()
-            def maskout_label(index, sample_indice):
-                query_index = sample_indice.index(query_indices[index]) # query_index: index of query node in sample_indice of the batch
+            def maskout_label(batch_index, sample_indice):
+                query_index = sample_indice.index(query_indices[batch_index]) # query_index: index of query node in sample_indice of the batch
                 # L2S mask shape : B, S, L
-                self.tmpmask_L2S[index, query_index] = 1
-                self.tmpmask_L2S[index, query_index][L-1] = 0  # connect to all label nodes except the unseen label
+                self.tmpmask_L2S[batch_index, query_index] = 1
+                self.tmpmask_L2S[batch_index, query_index][L-1] = 0  # connect to all label nodes except the unseen label
             _ = list(map(maskout_label, range(len(sample_indices)), sample_indices))
         else:
             self.tmpmask_L2S = dataset.MASKS['L2S'].clone().detach()
+            # return
             def maskout_label(index, query):
                 self.tmpmask_L2S[index, query] = 0
                 self.tmpmask_L2S[index, query][L-1] = 1 # make it as unseen label
@@ -223,7 +224,8 @@ class TransformerDecoderModel(nn.Module):
             self.maskout_lable(dataset, query_indices, sample_indices)
             print_checkpoint_time('maskout_lable')
             # the query node's indexs in sample_indices
-            query_indexs = [sample_indices[i].index(query) for i, query in enumerate(query_indices)]
+            # query_indexs = [sample_indices[i].index(query) for i, query in enumerate(query_indices)]
+            query_indexs = np.argmax(np.array(sample_indices) == np.array(query_indices)[:, np.newaxis], axis=1)
             S_ = K # the S used in transformer decoder
             print_checkpoint_time('get query_indexs')
         elif mode == 'inferring':
@@ -241,8 +243,12 @@ class TransformerDecoderModel(nn.Module):
             # print(dataset.TEST_POOL.iloc[0])
             # print(dataset.TEST_POOL.columns)
             NUM, _, _ = get_feilds_attributes()
-            numerical_unseen_indexes = [dataset.unseen_node_indexs_C[filed] for filed in NUM]
-            # test_data_pool = dataset.TEST_POOL.drop(columns=[get_target()])TEST_POOL_VALUES
+            
+            # cacyulate numerical_unseen_indexes
+            # numerical_unseen_indexes = [dataset.unseen_node_indexs_C[filed] for filed in NUM]
+            get_index_list = np.vectorize(lambda field: dataset.unseen_node_indexs_C[field])
+            numerical_unseen_indexes = get_index_list(NUM)
+            
             test_data_pool = dataset.TEST_POOL_VALUES.drop(columns=[get_target()])
             C_input[:,numerical_unseen_indexes] = torch.tensor((test_data_pool.iloc[query_indices][NUM]).to_numpy(),dtype=torch.double,device=get_DEVICE()).unsqueeze(-1)
             # C_input[:,list(dataset.unseen_node_indexs_C.values())] = torch.tensor((dataset.TEST_POOL.drop(columns=[get_target()]).iloc[query_indices]).to_numpy(),dtype=torch.double,device=get_DEVICE()).unsqueeze(-1)
@@ -357,8 +363,8 @@ class TransformerDecoderModel(nn.Module):
                                                     memory_mask = Tensor.contiguous(masks['C2F'].clone().detach().transpose(1, 2))[:,:C,:F])# + C_embedded
                 S_embedded = self.transformer_decoder['C2S'] (S_embedded,C_embedded, origin_S,
                                                     memory_mask = Tensor.contiguous(masks['S2C'].clone().detach().transpose(1, 2))[:,:S_,:C])# + S_embedded
-                L_embedded = self.transformer_decoder['S2L'] (L_embedded,S_embedded, origin_L,
-                                                    memory_mask = Tensor.contiguous(self.tmpmask_L2S.clone().detach().transpose(1, 2))[:,:L,:S_])# + L_embedded
+                # L_embedded = self.transformer_decoder['S2L'] (L_embedded,S_embedded, origin_L,
+                #                                     memory_mask = Tensor.contiguous(self.tmpmask_L2S.clone().detach().transpose(1, 2))[:,:L,:S_])# + L_embedded
         print_checkpoint_time('propagate')
         # print('after',S_embedded[0][0])
         output = self.MLP(S_embedded)

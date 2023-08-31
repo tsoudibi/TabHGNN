@@ -218,7 +218,7 @@ class HGNN_dataset():
             masks['S2C'][index, C_connection[indexs_in_test_pool[index]],S-1] = 1  
         masks['S2C'] = self.MASKS_FULL['S2C'].clone().detach().repeat(len(indexs_in_test_pool),1,1)
         _ = list(map(edit_S2C, range(len(indexs_in_test_pool))))
-        # print(masks['S2C'][0,:,S-1])
+
         # C2F remains the same
         masks['C2F'] = self.MASKS_FULL['C2F'].repeat(len(indexs_in_test_pool),1,1)
         
@@ -295,26 +295,36 @@ class HGNN_dataset():
         '''
         DEVICE = get_DEVICE()
         # include specific nodes (e.g. query nodes), while remaining sample_size
-        sample_indices = []
-        if query_indices is not []:
-                def make_sample_indices(query):
-                    indices = self.sample_with_distrubution(sample_size - 1)
-                    while query in indices:
-                        indices = self.sample_with_distrubution(sample_size - 1)
-                    # add query nodes into sample_indices
-                    indices.append(query)
-                    return sorted(indices)
-                sample_indices = list(map(make_sample_indices, query_indices))
-            # for query in query_indices:
-                # indices = self.sample_with_distrubution(sample_size - 1)
-                # while query in indices:
-                #     indices = self.sample_with_distrubution(sample_size - 1)
-                # # add query nodes into sample_indices
-                # indices.append(query)
-                # sample_indices.append(sorted(indices))
-        else:
-            indices = self.sample_with_distrubution(sample_size - len(query_indices))
-            sample_indices.append(sorted(indices))
+        # sample_indices = []
+        # if query_indices is not []:
+        #         def make_sample_indices(query):
+        #             indices = self.sample_with_distrubution(sample_size - 1)
+        #             while query in indices:
+        #                 indices = self.sample_with_distrubution(sample_size - 1)
+        #             # add query nodes into sample_indices
+        #             indices.append(query)
+        #             return sorted(indices)
+        #         sample_indices = list(map(make_sample_indices, query_indices))
+        #     # for query in query_indices:
+        #         # indices = self.sample_with_distrubution(sample_size - 1)
+        #         # while query in indices:
+        #         #     indices = self.sample_with_distrubution(sample_size - 1)
+        #         # # add query nodes into sample_indices
+        #         # indices.append(query)
+        #         # sample_indices.append(sorted(indices))
+        # else:
+        #     indices = self.sample_with_distrubution(sample_size - len(query_indices))
+        #     sample_indices.append(sorted(indices))
+            
+        # torch.rand + argsort 
+        query_indices_tensor = torch.tensor(query_indices,device=get_DEVICE()).unsqueeze(-1)
+        random_indices_tensor = torch.rand(len(query_indices),len(self.TRAIN_POOL),device=get_DEVICE()).argsort(dim=-1)[:,:sample_size-1]
+        # print(random_indices_tensor.shape, query_indices_tensor.shape)
+        while (random_indices_tensor == query_indices_tensor.view(-1, 1)).any():
+            # print(sample_size)
+            random_indices_tensor = torch.where(random_indices_tensor == query_indices_tensor.view(-1, 1), random.randint(0,len(self.TRAIN_POOL)), random_indices_tensor)
+        sample_indices = torch.cat((query_indices_tensor, random_indices_tensor), dim=1).tolist()
+        
         # update mask
         # modify input tensor
         L_input, S_input, C_input, F_input = self.INPUTS
